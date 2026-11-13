@@ -603,6 +603,58 @@ input::selection, textarea::selection{ background:color-mix(in srgb, var(--frame
   .settings-card{ background:var(--bg-card); border-radius:14px; border:1px solid var(--line); overflow:hidden; }
   .settings-hint{ font-size:11px; color:var(--text-dim); margin-top:8px; line-height:1.4; }
   .ai-opt .t-name small{ display:block; font-size:12.5px; font-weight:500; color:var(--text-dim); margin-top:2px; }
+/* ===== v2: donje polje za unos, kartica stvari, kamera, pregled slika, AI pretraga ===== */
+.entry-input-wrap textarea{ flex:1; min-width:0; width:100%; border:none; background:transparent; padding:9px 6px; font-size:14.5px; line-height:20px; color:var(--text); font-family:inherit; resize:none; outline:none; max-height:100px; overflow-y:auto; }
+.entry-input-wrap textarea::placeholder{ color:var(--text-dim); font-size:13.5px; }
+body.has-entry .list-area{ padding-bottom:150px; }
+body.searching #entryBar{ display:none; }
+.cd-ttl{ flex:1; min-width:0; display:flex; align-items:center; gap:6px; }
+.cd-ttl input{ flex:0 1 auto; field-sizing:content; min-width:4ch; max-width:100%; border:none; background:transparent; color:var(--text); font-family:var(--font-title, inherit); font-size:21px; font-weight:600; padding:4px 0; outline:none; }
+.cd-ttl input::placeholder{ color:var(--text-dim); }
+.cd-ttl .cd-pen{ color:var(--text-dim); font-size:15px; flex:none; pointer-events:none; }
+.cd-del{ flex:none; border:1px solid var(--coral-line); color:var(--coral); background:transparent; border-radius:999px; padding:7px 14px; font-weight:600; font-size:13px; font-family:inherit; cursor:pointer; }
+.cd-big{ position:relative; width:100%; aspect-ratio:4/3; border-radius:14px; overflow:hidden; border:1px solid var(--line); background:var(--bg-elevated); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; color:var(--text-dim); font-size:13.5px; text-align:center; padding:0; }
+.cd-big img{ width:100%; height:100%; object-fit:cover; display:block; }
+.cd-big .cd-empty-ic{ font-size:40px; opacity:.5; }
+.cd-cnt{ position:absolute; right:10px; bottom:10px; background:rgba(0,0,0,.65); color:#fff; border-radius:999px; padding:5px 11px; font-size:13px; font-weight:600; }
+.cd-opis{ font-size:12.5px; color:var(--text-dim); margin:8px 2px 0; line-height:1.45; }
+.cd-meta{ font-size:12px; color:var(--text-dim); margin:2px 2px 6px; }
+.form-full .ff-foot.cd-foot{ display:flex; justify-content:space-around; align-items:flex-start; padding:10px 8px calc(12px + env(safe-area-inset-bottom)); }
+.cd-foot .home-sq{ flex:0 0 72px; width:72px; margin:0; }
+.cd-foot .home-sq .sq-box{ font-size:22px; }
+.cd-foot .cd-save .sq-box{ background:var(--green-deep); border-color:var(--green-deep); color:var(--on-accent); }
+.cd-foot .cd-save.dim{ opacity:.45; }
+.cam-screen{ position:fixed; inset:0; z-index:70; background:#000; display:flex; flex-direction:column; color:#fff; }
+.cam-top{ flex:none; display:flex; align-items:center; justify-content:space-between; padding:calc(12px + env(safe-area-inset-top,0px)) 14px 10px; }
+.cam-top b{ font-size:16px; }
+.cam-btn{ width:42px; height:42px; border-radius:50%; border:1px solid #444; background:#000; color:#fff; font-size:20px; display:flex; align-items:center; justify-content:center; cursor:pointer; }
+.cam-view{ flex:1; min-height:0; position:relative; background:#111; }
+.cam-view video{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+.cam-flash{ position:absolute; inset:0; background:#fff; opacity:0; pointer-events:none; transition:opacity .25s; }
+.cam-flash.on{ opacity:.7; transition:none; }
+.cam-bot{ flex:none; display:flex; align-items:center; justify-content:space-between; padding:16px 18px calc(22px + env(safe-area-inset-bottom)); gap:10px; }
+.cam-thumbs{ flex:1 1 0; display:flex; gap:5px; min-width:0; }
+.cam-thumbs img{ width:42px; height:42px; object-fit:cover; border-radius:8px; border:2px solid #fff; }
+.cam-shot{ flex:none; width:76px; height:76px; border-radius:50%; border:5px solid #fff; background:transparent; display:flex; align-items:center; justify-content:center; cursor:pointer; padding:0; }
+.cam-shot span{ width:58px; height:58px; border-radius:50%; background:#fff; display:block; }
+.cam-shot:disabled span{ background:#888; }
+.cam-done{ flex:1 1 0; display:flex; justify-content:flex-end; }
+.cam-done button{ height:46px; padding:0 18px; border-radius:999px; border:none; background:var(--green-deep); color:var(--on-accent); font-weight:700; font-size:15px; font-family:inherit; cursor:pointer; }
+.vw-screen{ position:fixed; inset:0; z-index:48; background:#000; display:flex; flex-direction:column; color:#fff; touch-action:none; }
+.vw-top{ flex:none; display:flex; align-items:center; justify-content:space-between; padding:calc(12px + env(safe-area-inset-top,0px)) 14px 10px; }
+.vw-top b{ font-size:16px; }
+.vw-del{ color:#f66; border-color:#533; }
+.vw-img{ flex:1; min-height:0; display:flex; align-items:center; justify-content:center; overflow:hidden; }
+.vw-img img{ max-width:100%; max-height:100%; display:block; user-select:none; -webkit-user-drag:none; pointer-events:none; }
+.vw-bot{ flex:none; padding:14px 16px calc(22px + env(safe-area-inset-bottom)); text-align:center; }
+.vw-prof{ height:50px; padding:0 24px; border-radius:999px; border:none; background:var(--green-deep); color:var(--on-accent); font-weight:700; font-size:15px; font-family:inherit; cursor:pointer; }
+.vw-prof:disabled{ opacity:.45; }
+.vw-hint{ color:#aaa; font-size:12.5px; margin-top:10px; }
+.ai-srch{ display:flex; align-items:center; justify-content:center; gap:8px; width:100%; margin:12px 0 6px; padding:13px 14px; border-radius:14px; border:1px dashed var(--line); background:var(--bg-elevated); color:var(--green-deep); font-weight:600; font-size:14px; font-family:inherit; cursor:pointer; }
+.ai-srch.hot{ border-style:solid; border-color:var(--green-deep); background:color-mix(in srgb, var(--green-deep) 18%, var(--bg-elevated)); }
+#confirmBackdrop{ z-index:80; }
+body.noting .vw-screen, body.noting .cam-screen{ top:var(--note-h); }
+.ai-srch-err{ color:var(--coral); font-size:13px; margin:8px 2px; }
 </style>
 </head>
 <body>
@@ -614,7 +666,6 @@ let items = [];
 let settings = { viewMode: 'lista', sortMode: 'naziv', theme: 'klasicna' };
 let searchOpen = false;
 let searchQuery = '';
-let openDetailId = null;
 
 function todayISO(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
 function daysUntil(iso){
@@ -638,6 +689,22 @@ function stemWord(w){
   return (w.length>3 && /[aeiou]$/.test(w)) ? w.slice(0,-1) : w;
 }
 function normalizeSearchWord(w){ return stemWord(foldDiacritics(w)); }
+/* v2 (uzor Zakazivanje v32): ćirilica → latinica, kvačice, strane oznake, velika/mala slova; znakovi između se zanemaruju */
+const CYR_LAT = {'а':'a','б':'b','в':'v','г':'g','д':'d','ђ':'đ','е':'e','ж':'ž','з':'z','и':'i','ј':'j','к':'k','л':'l','љ':'lj','м':'m','н':'n','њ':'nj','о':'o','п':'p','р':'r','с':'s','т':'t','ћ':'ć','у':'u','ф':'f','х':'h','ц':'c','ч':'č','џ':'dž','ш':'š'};
+const FOLD_X = {'ø':'o','æ':'ae','œ':'oe','ß':'ss','ł':'l'};
+function foldAll(s){ return foldDiacritics(String(s||'').toLowerCase().replace(/[а-яђјљњћџ]/g, ch=>CYR_LAT[ch]||ch)).normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[øæœßł]/g, ch=>FOLD_X[ch]).replace(/\s+/g,' ').trim(); }
+function compactKey(s){ return String(s||'').replace(/[^a-z0-9]/g,''); }
+/* oblici reči: cela, bez poslednjeg samoglasnika (pasoša → pasoš), i padež sa promenom k/g/h → c/z/s (fioci → fioka, knjizi → knjiga) */
+function wordForms(w){
+  const s = stemWord(w), out = [w, s];
+  if(s !== w){ const z = s.slice(-1), back = { c:'k', z:'g', s:'h' }[z]; if(back) out.push(s.slice(0,-1)+back); }
+  return out;
+}
+/* svaka reč pretrage mora da postoji (bilo kojim redom, i deo reči); „pasoša“/„fioci“ = bez poslednjeg samoglasnika */
+function searchHit(it, qWords){
+  const hay = foldAll([it.naziv, it.mesto, it.opisSlika].filter(Boolean).join(' ')), hayC = compactKey(hay);
+  return qWords.every(w=>wordForms(w).some(f=>{ const c = compactKey(f); return hay.includes(f) || (c && hayC.includes(c)); }));
+}
 function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
 function displayNaziv(naziv){
   if(!naziv) return '';
@@ -737,7 +804,7 @@ function persistChecked(key, val){ if(!lsSet(key, val)){ warnSaveFailed(); retur
 /* ---------- BACKUP: export / import / reminder ---------- */
 function buildBackup(){
   /* slike su u IndexedDB-u (SLIKE), u kopiju idu uz svoju stvar */
-  const withPics = items.map(it=> SLIKE.has(it.id) ? Object.assign({}, it, { slika: SLIKE.get(it.id) }) : it);
+  const withPics = items.map(it=> SLIKE.has(it.id) ? Object.assign({}, it, { slike: SLIKE.get(it.id).slice() }) : it);
   return { version:1, app:'gde-sam-ostavio', exportedAt: new Date().toISOString(), items: withPics, settings: settings, backupIntervalDays: getBackupIntervalDays() };
 }
 /* v54 (uzor Troškovi v34/v37): „Podeli kopiju“ — Androidov meni za deljenje (Google Drive, mejl…). Chrome ne deli .json
@@ -825,9 +892,10 @@ function applyBackup(backup){
   const pics = [];
   items = (backup.items || []).map(it=>{
     const c = Object.assign({}, it);
-    if(c.slika){ pics.push([c.id, c.slika]); }
-    delete c.slika;
-    return c;
+    const a = Array.isArray(c.slike) ? c.slike.filter(Boolean) : (c.slika ? [c.slika] : []);   /* v1 kopija: jedna slika */
+    if(a.length){ pics.push([c.id, a]); }
+    delete c.slika; delete c.slike;
+    return migrateItem(c);
   });
   persistItems();
   const keep = new Set(items.map(i=>i.id).concat(getTrash().map(x=>x.id)));
@@ -883,11 +951,14 @@ function backupReminderHtml(){
 function persistItems(){ return persistChecked('gso:items', JSON.stringify(items)); }   /* stvari NEMAJU slike u sebi (Slike) */
 /* ---------- SLIKE (IndexedDB, po uzoru na Arhivu „Skladiste“) ----------
    Slike NE idu u localStorage (~5 MB za ceo domen; u Apoteci su slike zauzimale par MB). Baza 'gsoDB', skladište 'slike'
-   {id, data}: id = id stvari, data = slika (data:URL, JPEG). Pri pokretanju se sve slike učitaju u SLIKE (Map), pa prikaz
+   {id, data}: id = id stvari, data = NIZ slika (data:URL, JPEG; prva = profilna; v1 je imao jednu sliku kao tekst — čita se
+   kao niz od jedne). Pri pokretanju se sve slike učitaju u SLIKE (Map), pa prikaz
    i rezervna kopija rade bez čekanja (deljenje kopije mora da krene odmah u dodiru). Slika obrisane stvari ostaje dok je
    stvar u korpi. Neuspeo upis → „NIJE SAČUVANO!“ + dnevnik grešaka. */
 const SLIKE = new Map();
-function slikaOf(it){ return (it && SLIKE.get(it.id)) || null; }
+function slikeOf(it){ return (it && SLIKE.get(it.id)) ? SLIKE.get(it.id).slice() : []; }
+function slikaOf(it){ const a = it && SLIKE.get(it.id); return (a && a[0]) || null; }
+function picSig(arr){ return (arr && arr.length) ? arr.length+':'+arr.map(p=>p.length).join(',') : ''; }
 const Slike = (()=>{
   const DB = 'gsoDB', ST = 'slike';
   let _p = null;
@@ -917,12 +988,13 @@ const Slike = (()=>{
   return {
     ucitaj(){
       return run('readonly', (st, o)=>{ const r = st.getAll(); r.onsuccess = ()=>{ o.v = r.result || []; }; })
-        .then(list=>{ list.forEach(x=>{ if(x && x.id && x.data) SLIKE.set(x.id, x.data); }); return true; })
+        .then(list=>{ list.forEach(x=>{ if(!x || !x.id || !x.data) return; const a = Array.isArray(x.data) ? x.data.filter(Boolean) : [x.data]; if(a.length) SLIKE.set(x.id, a); }); return true; })
         .catch(e=>{ logError('slike', 'Učitavanje slika nije uspelo: '+((e && e.message) || e)); return false; });
     },
-    /* data = null briše sliku */
+    /* data = niz slika; prazan niz ili null briše slike stvari */
     postavi(id, data){
-      if(data){ SLIKE.set(id, data); return run('readwrite', st=>st.put({ id: id, data: data })).then(()=>true, fail); }
+      if(typeof data === 'string') data = [data];
+      if(data && data.length){ data = data.slice(); SLIKE.set(id, data); return run('readwrite', st=>st.put({ id: id, data: data })).then(()=>true, fail); }
       SLIKE.delete(id);
       return run('readwrite', st=>st.delete(id)).then(()=>true, fail);
     }
@@ -932,6 +1004,16 @@ function loadItems(){
   const saved = lsGet('gso:items');
   if(saved && saved.value){ try{ items = JSON.parse(saved.value); }catch(e){} }
   else { persistItems(); }
+  if(items.some(it=>it.napomena)){ items = items.map(migrateItem); persistItems(); }
+}
+/* v2: nema posebne napomene — dopisuje se na kraj mesta (ništa se ne gubi) */
+function migrateItem(it){
+  if(it && it.napomena){
+    const n = String(it.napomena).trim(), m = String(it.mesto||'').trim();
+    it.mesto = m ? (m.includes(n) ? m : m.replace(/[.,;\s]+$/,'')+', '+n) : n;
+  }
+  if(it) delete it.napomena;
+  return it;
 }
 function fmtDatum(iso){
   if(!iso) return '';
@@ -1126,7 +1208,7 @@ document.addEventListener('pointerdown', (e)=>{
 }, true);
 function handleCardClick(id){
   if(cardLongPressFired){ cardLongPressFired = false; return; }
-  openDetail(id);
+  openItemForm(id);
 }
 let cardMenuCloseFn = null;
 function openCardQuickMenu(id){
@@ -1186,13 +1268,11 @@ function setSortMode(mode){
 /* ---------- RENDER ---------- */
 function render(){
   const app = document.getElementById('app');
-  const qWords = searchQuery.trim().split(/\s+/).filter(Boolean).map(normalizeSearchWord);
-  const filtered = sortItems(qWords.length ? items.filter(it=>{
-    const haystack = foldDiacritics([it.naziv, it.mesto, it.napomena].filter(Boolean).join(' '));
-    return qWords.every(w => haystack.includes(w));
-  }) : items);
+  const qWords = foldAll(searchQuery).split(' ').filter(Boolean);
+  const filtered = sortItems(qWords.length ? items.filter(it=>searchHit(it, qWords)) : items);
+  document.body.classList.toggle('searching', !!searchOpen);
   const thumb = (it)=>{ const sl = slikaOf(it);
-    return '<div class="med-thumb"'+(sl?' onclick="event.stopPropagation(); openPhotoFullScreen(\''+it.id+'\')"':' style="font-size:26px;"')+'>'+(sl ? '<img src="'+sl+'">' : (it.ikonica||'📦'))+'</div>'; };
+    return '<div class="med-thumb"'+(sl?'':' style="font-size:26px;"')+'>'+(sl ? '<img src="'+sl+'">' : (it.ikonica||'📦'))+'</div>'; };
   let listHtml;
   function groupKeyForSort(it){
     if(it.pinned) return '📌 Zakačeno';
@@ -1201,7 +1281,7 @@ function render(){
   }
   const press = (it)=>' onclick="handleCardClick(\''+it.id+'\')" onpointerdown="startCardLongPress(\''+it.id+'\')" onpointerup="cancelCardLongPress()" onpointerleave="cancelCardLongPress()" onpointercancel="cancelCardLongPress()"';
   if(filtered.length===0){
-    listHtml = '<div class="empty">'+(qWords.length ? 'Nema stvari koje odgovaraju pretrazi "'+escapeHtml(searchQuery)+'".' : 'Još nema zabeleženih stvari.<br>Dodaj prvu dugmetom „Dodaj“ gore.')+'</div>';
+    listHtml = '<div class="empty">'+(qWords.length ? 'Nema stvari koje odgovaraju pretrazi "'+escapeHtml(searchQuery)+'".' : 'Još nema zabeleženih stvari.<br>Izgovori ili ukucaj dole šta je i gde je, ili dodirni „Dodaj“ gore.')+'</div>';
   } else if(settings.viewMode==='mreza'){
     listHtml = '<div class="grid-list">'+
       filtered.map(it=>'<div class="grid-card" id="item-'+it.id+'"'+press(it)+'>'+thumb(it)+
@@ -1233,13 +1313,13 @@ function render(){
     (searchOpen
       ? '<div class="search-wrap home-search"><span class="sicon">'+ic('🔍','search')+'</span><input id="searchInput" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Pretraži stvar, mesto, napomenu..." value="'+escapeHtml(searchQuery)+'" oninput="setSearch(this.value)" autofocus><button class="search-x" onclick="toggleSearch()" aria-label="Zatvori pretragu">✕</button></div>'
       : '<div class="home-sq-row">'+
-        '<button class="home-sq sq-main" onclick="openAddSheet()"><span class="sq-box">'+HOME_IC.plus+'</span>Dodaj</button>'+
+        '<button class="home-sq sq-main" onclick="openItemForm(null)"><span class="sq-box">'+HOME_IC.plus+'</span>Dodaj</button>'+
         '<button class="home-sq" onclick="toggleSearch()"><span class="sq-box">'+HOME_IC.search+'</span>Pretraži</button>'+
         '<button class="home-sq" onclick="openSortSheet()"><span class="sq-box">'+HOME_IC.sort+'</span>Sortiraj</button>'+
         '<button class="home-sq" onclick="openChatMode()"><span class="sq-box">'+HOME_IC.ai+'</span>AI</button>'+
         '</div>')+
     '</div>'+
-    '<div class="list-area">'+listHtml+'</div>';
+    '<div class="list-area">'+listHtml+(qWords.length ? aiSearchHtml(filtered.length) : '')+'</div>';
   _swOpen = null;
   if(settings.viewMode!=='mreza') app.querySelectorAll('.list-area > .med-card').forEach(c=>swipeToDelete(c, c.id.slice(5)));
 
@@ -1248,6 +1328,47 @@ function render(){
   }
 }
 let searchCloseFn = null;
+/* ---------- v2: ✨ Traži sa AI (samo na dodir; jedan poziv po upitu) ---------- */
+let aiSrch = { q:'', ids:null, busy:false, err:'' };
+function aiSearchHtml(nFound){
+  const q = searchQuery.trim();
+  if(aiSrch.q === q && aiSrch.busy) return '<div class="ai-analyzing" style="margin:14px 2px"><span class="ai-spinner"></span> AI traži…</div>';
+  if(aiSrch.q === q && aiSrch.ids){
+    const found = aiSrch.ids.map(getItem).filter(Boolean);
+    return '<div class="group-header">AI našao ('+found.length+')</div>'+
+      (found.length ? found.map(it=>{ const sl = slikaOf(it);
+        return '<div class="med-card" onclick="openItemForm(\''+it.id+'\')"><div class="med-thumb"'+(sl?'':' style="font-size:26px;"')+'>'+(sl ? '<img src="'+sl+'">' : (it.ikonica||'📦'))+'</div>'+
+          '<div class="med-info"><div class="med-name">'+escapeHtml(displayNaziv(it.naziv))+'</div><div class="med-sub">'+escapeHtml(it.mesto||'')+'</div></div></div>'; }).join('')
+        : '<div class="empty" style="padding:20px 10px">AI nije našao ništa slično.</div>');
+  }
+  return (aiSrch.q === q && aiSrch.err ? '<div class="ai-srch-err">'+escapeHtml(aiSrch.err)+'</div>' : '')+
+    '<button class="ai-srch'+(nFound ? '' : ' hot')+'" onclick="runAiSearch()">✨ Traži sa AI: „'+escapeHtml(q)+'“</button>';
+}
+async function runAiSearch(){
+  const q = searchQuery.trim(); if(!q || aiSrch.busy) return;
+  if(!getApiKey()){ aiSrch = { q:q, ids:null, busy:false, err:'Nije unet Gemini API ključ (Podešavanja → AI obrada).' }; render(); return; }
+  aiSrch = { q:q, ids:null, busy:true, err:'' }; render();
+  try{
+    const ids = await callGeminiSearch(q);
+    if(aiSrch.q === q) aiSrch = { q:q, ids:ids, busy:false, err:'' };
+  }catch(e){
+    if(aiSrch.q === q) aiSrch = { q:q, ids:null, busy:false, err:'AI pretraga nije uspela: '+((e && e.message) || e) };
+  }
+  if(searchOpen && searchQuery.trim() === q){
+    const el = document.getElementById('searchInput'), had = el && document.activeElement === el;
+    render(); if(had){ const n = document.getElementById('searchInput'); if(n){ n.focus(); try{ n.setSelectionRange(n.value.length, n.value.length); }catch(_){} } }
+  }
+}
+async function callGeminiSearch(q){
+  const data = items.map(it=>({ id: it.id, naziv: it.naziv, mesto: it.mesto||'', na_slikama: it.opisSlika||'' }));
+  const sys = 'Korisnik beleži gde je ostavio stvari. Zapisi (JSON; na_slikama = šta se vidi na fotografijama stvari): '+JSON.stringify(data)+'. '+
+    'Pronađi SVE zapise koji odgovaraju upitu po značenju, ne samo po slovima: srodne reči, vrsta stvari, namena, i ono što se vidi na slikama '+
+    '(npr. „dokumenta“ → pasoš, lična karta; „za zimu“ → zimske gume; „alat“ → kutija sa alatom, bušilica). Upit može biti i ćirilicom, sa greškom u kucanju ili bez kvačica. '+
+    'Vrati ISKLJUČIVO JSON {"ids": [tačni id-jevi iz podataka, najbolji prvi]}; prazan niz ako ništa ne odgovara. Ne izmišljaj id.';
+  const r = await geminiStructuredRequest(sys, [{ text: q }], { type:'object', properties:{ ids:{ type:'array', items:{ type:'string' } } }, required:['ids'] }, 400, 30000, 'AI pretraga: '+q.slice(0,40));
+  const ok = new Set(items.map(i=>i.id));
+  return (Array.isArray(r.ids) ? r.ids : []).filter((x,i,a)=> ok.has(x) && a.indexOf(x)===i);
+}
 function toggleViewMode(){
   settings.viewMode = settings.viewMode==='mreza' ? 'lista' : 'mreza';
   persistSettings();
@@ -1259,77 +1380,20 @@ function toggleSearch(){
   } else {
     searchOpen = true;
     render();
-    searchCloseFn = ()=>{ searchOpen=false; searchQuery=''; render(); searchCloseFn=null; };
+    searchCloseFn = ()=>{ searchOpen=false; searchQuery=''; aiSrch = { q:'', ids:null, busy:false, err:'' }; render(); searchCloseFn=null; };
     pushOverlay(searchCloseFn);
     setTimeout(()=>{ const el=document.getElementById('searchInput'); if(el) el.focus(); }, 30);
   }
 }
 function setSearch(v){
   searchQuery=v;
+  if(aiSrch.q !== v.trim() && !aiSrch.busy) aiSrch = { q:'', ids:null, busy:false, err:'' };
   const cursorPos = v.length;
   render();
   const el=document.getElementById('searchInput');
   if(el){ el.focus(); try{ el.setSelectionRange(cursorPos, cursorPos); }catch(e){} }
 }
 
-/* ---------- DETAIL ---------- */
-let detailCloseFn = null;
-function openDetail(id, swapFromFn){
-  openDetailId = id;
-  renderDetail();
-  if(!detailCloseFn){
-    detailCloseFn = ()=>{
-      openDetailId = null;
-      const b = document.getElementById('detailBackdrop');
-      if(b) b.remove();
-      if(!document.getElementById('formBackdrop')) document.body.style.overflow='';
-      detailCloseFn = null;
-    };
-    if(swapFromFn){ swapOverlay(swapFromFn, detailCloseFn); }
-    else { pushOverlay(detailCloseFn); }
-  }
-}
-function closeDetail(){
-  if(detailCloseFn){ closeOverlay(detailCloseFn); detailCloseFn = null; }
-}
-function renderDetail(){
-  const it = getItem(openDetailId);
-  if(!it) return;
-  let b = document.getElementById('detailBackdrop');
-  if(!b){ b = document.createElement('div'); b.id='detailBackdrop'; b.className='modal-backdrop top'; document.body.appendChild(b); }
-  const sl = slikaOf(it);
-  const fld = (label, val, cls)=>'<div class="detail-field"><div class="detail-field-label">'+label+'</div><div class="detail-field-value'+(cls||'')+'">'+val+'</div></div>';
-  b.innerHTML = '<div class="modal full">'+
-    '<button class="modal-close-x" onclick="closeDetail()">✕</button>'+
-    '<div class="detail-hero">'+
-    '<div class="detail-thumb" onclick="'+(sl?'openPhotoFullScreen()':'')+'"'+(sl?'':' style="font-size:30px;"')+'>'+(sl ? '<img src="'+sl+'">' : (it.ikonica||'📦'))+'</div>'+
-    '<div><div class="detail-title serif">'+escapeHtml(displayNaziv(it.naziv))+'</div></div>'+
-    '</div>'+
-    '<div class="detail-body">'+
-    fld('MESTO', it.mesto ? escapeHtml(it.mesto) : 'Nije uneto', it.mesto ? '' : ' muted')+
-    (it.napomena ? fld('NAPOMENA', escapeHtml(it.napomena)) : '')+
-    ((it.updatedAt||it.createdAt) ? fld('ZABELEŽENO', fmtDatum(it.updatedAt||it.createdAt)) : '')+
-    '<div class="detail-actions">'+
-    '<button class="cancel-btn" onclick="openEditForm(\''+it.id+'\')">Izmeni</button>'+
-    '<button class="delete-btn" onclick="confirmDeleteItem(\''+it.id+'\')">Obriši</button>'+
-    '</div>'+
-    '</div></div>';
-  document.body.style.overflow='hidden';
-}
-let photoFullCloseFn = null;
-function openPhotoFullScreen(id){
-  const it = getItem(id || openDetailId);
-  const sl = slikaOf(it);
-  if(!sl) return;
-  const p = document.createElement('div'); p.className='photo-full'; p.id='photoFullEl';
-  p.innerHTML = '<button class="photo-full-close" onclick="closePhotoFullScreen()">✕</button><img src="'+sl+'">';
-  document.body.appendChild(p);
-  photoFullCloseFn = ()=>{ const pp=document.getElementById('photoFullEl'); if(pp) pp.remove(); photoFullCloseFn=null; };
-  pushOverlay(photoFullCloseFn);
-}
-function closePhotoFullScreen(){
-  if(photoFullCloseFn){ closeOverlay(photoFullCloseFn); photoFullCloseFn = null; }
-}
 function confirmDeleteItem(id, swapFromFn){
   showConfirm('Obrisati ovu stvar? Ide u korpu, odakle može da se vrati.', ()=>{
     const it = getItem(id);
@@ -1338,14 +1402,14 @@ function confirmDeleteItem(id, swapFromFn){
     if(!trashAdd(it)){ showBanner('Brisanje nije uspelo: na telefonu nema mesta za korpu. Isprazni korpu u Podešavanjima pa probaj ponovo.'); return; }
     items = items.filter(i=>i.id!==id);
     persistItems();
-    closeDetail();
+    closeItemForm();
     render();
     showBanner('„'+it.naziv+'“ je u korpi.', 'info');
   }, null, swapFromFn);
 }
 
 /* ---------- ADD / EDIT FORM (draft-based, da ne izgubi unos pri osvezavanju zbog fotografije) ---------- */
-const APP_VERSION = 1; /* svaka objava: +1, isti broj u linku ?v=N i u keš imenu sw.js */
+const APP_VERSION = 2; /* svaka objava: +1, isti broj u linku ?v=N i u keš imenu sw.js */
 /* MODUL ai-dnevnik v1 — izvor: Arhiva v174 (Podešavanja → AI obrada: trošak i poslednje obrade, probano 20.10.2026.)
 Upotreba (uz modul gemini v2):
   const log = [], t0 = Date.now();
@@ -1486,25 +1550,6 @@ function openHomeSheet(html){
 }
 function closeHomeSheet(){ if(homeSheetCloseFn) closeOverlay(homeSheetCloseFn); }
 function sheetHead(title){ return '<div class="hs-head"><button class="hs-back" onclick="closeHomeSheet()" aria-label="Nazad">'+HOME_IC.back+'</button><span class="hs-title serif">'+title+'</span></div>'; }
-function openAddSheet(){
-  openHomeSheet(sheetHead('Dodaj')+
-    '<button class="hs-row" onclick="addFromPhoto(\'camera\')"><span class="hs-ic">'+HOME_IC.camera+'</span><span>Slikaj stvar</span></button>'+
-    '<button class="hs-row" onclick="addFromPhoto(\'gallery\')"><span class="hs-ic">'+HOME_IC.gallery+'</span><span>Iz galerije</span></button>'+
-    '<button class="hs-row" onclick="openAddTextSheet()"><span class="hs-ic">'+HOME_IC.mic+'</span><span>Ukucaj ili izgovori</span></button>');
-}
-function addFromPhoto(kind){
-  const fn = homeSheetCloseFn; homeSheetCloseFn = null;
-  openItemForm(null, fn);              /* prozor Dodaj se menja obrascem na istom koraku istorije */
-  const x=document.getElementById('homeSheet'); if(x) x.remove();
-  pickPhotoFor(kind, 'main');
-}
-function openAddTextSheet(){
-  openHomeSheet(sheetHead('Ukucaj ili izgovori')+
-    '<input id="addTextInput" class="hs-input" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="npr. pasoš je u spavaćoj sobi, u fioci noćnog ormarića" onkeydown="if(event.key===\'Enter\') submitQuickText()">'+
-    '<div class="hs-hint">Za glas dodirni mikrofon na tastaturi. AI sam odvaja stvar i mesto i odmah čuva.</div>'+
-    '<button class="hs-go" onmousedown="event.preventDefault()" onclick="submitQuickText()">Dodaj</button>');
-  const el = document.getElementById('addTextInput'); if(el) el.focus();
-}
 const SORT_OPTS = [['naziv','Naziv'],['mesto','Mesto'],['novo','Najnovije']];
 function openSortSheet(){
   openHomeSheet(sheetHead('Sortiraj')+
@@ -1525,7 +1570,7 @@ function closeChatMode(){
 }
 function openItemFromChat(id){
   if(!getItem(id)) return;
-  openDetail(id);
+  openItemForm(id);
 }
 function escapeChatText(text){
   const escaped = escapeHtml(text);
@@ -1585,7 +1630,7 @@ function describeChatAction(act){
 function applyChatActions(msgIdx){
   const msg = chatMessages[msgIdx];
   if(!msg || !msg.actions) return;
-  const POLJA = ['naziv','mesto','napomena'];
+  const POLJA = ['naziv','mesto'];
   const ciste = (p)=>{ const o = {}; POLJA.forEach(k=>{ if(p && typeof p[k]==='string') o[k] = p[k].trim(); }); return o; };
   const now = new Date().toISOString();
   let failed = 0;
@@ -1599,7 +1644,7 @@ function applyChatActions(msgIdx){
         if(it){ if(trashAdd(it)) items = items.filter(i=>i.id!==act.stavka_id); else failed++; }
       } else if(act.tip==='dodaj'){
         const f = ciste(act.polja);
-        if(f.naziv) items.push(Object.assign({ id: uid('m'), naziv:'', mesto:'', napomena:'', ikonica:'📦', createdAt: now, updatedAt: now }, f));
+        if(f.naziv) items.push(Object.assign({ id: uid('m'), naziv:'', mesto:'', ikonica:'📦', createdAt: now, updatedAt: now }, f));
       }
     }catch(err){}
   });
@@ -1683,18 +1728,18 @@ async function askAIAboutItems(question, history){
   const apiKey = getApiKey();
   if(!apiKey) throw new Error('Nije unet Gemini API ključ. Idi u Podešavanja (⚙) → AI obrada i unesi ga.');
   const dataSummary = JSON.stringify(items.map(it=>({
-    id: it.id, naziv: it.naziv, mesto: it.mesto, napomena: it.napomena, zabelezeno: (it.updatedAt||it.createdAt||'').slice(0,10)
+    id: it.id, naziv: it.naziv, mesto: it.mesto, na_slikama: it.opisSlika||'', zabelezeno: (it.updatedAt||it.createdAt||'').slice(0,10)
   })));
   const sys = 'Ti si pomoćnik unutar aplikacije "Gde sam ostavio" (korisnik beleži gde je ostavio ili spremio stvari, da bi ih kasnije našao). '+
-    'Evo svih zabeleženih stvari u JSON formatu (mesto = gde se stvar nalazi, zabelezeno = kad je mesto poslednji put upisano): '+dataSummary+'. '+
+    'Evo svih zabeleženih stvari u JSON formatu (mesto = gde se stvar nalazi, na_slikama = šta se vidi na fotografijama stvari, zabelezeno = kad je mesto poslednji put upisano): '+dataSummary+'. '+
     'Danas je: '+todayISO()+'. '+
-    'Odgovaraj kratko i jasno na srpskom jeziku — gde je neka stvar, šta se nalazi na nekom mestu, pretraga po nazivu, mestu i napomeni (i po sličnom značenju: npr. "dokumenta" obuhvata pasoš i ličnu kartu). Kad odgovara više stvari, nabroj SVE, kratko po stvari. '+
+    'Odgovaraj kratko i jasno na srpskom jeziku — gde je neka stvar, šta se nalazi na nekom mestu, pretraga po nazivu, mestu i onome što se vidi na slikama (i po sličnom značenju: npr. "dokumenta" obuhvata pasoš i ličnu kartu). Kad odgovara više stvari, nabroj SVE, kratko po stvari. '+
     'Ako podaci ne sadrže odgovor, iskreno reci da te stvari nema u zapisu — NIKAD ne izmišljaj mesto. '+
     'FORMATIRANJE: piši prirodnim rečenicama; za spisak koristi novi red sa "- " ispred svake stavke. Kad god pomeneš KONKRETNU stvar iz zapisa po imenu, OBAVEZNO je napiši u formatu {{id:naziv}} koristeći TAČAN "id" iz podataka iznad; ne koristi zvezdice za nazive stvari. '+
     'IZMENE PODATAKA: možeš predložiti dodavanje, izmenu (npr. novo mesto) ili brisanje stvari, ali NIKAD ih sam ne primenjuješ — korisnik mora da potvrdi. '+
     'Kad predlažeš izmenu, na SAMOM KRAJU odgovora dodaj tačno ovaj blok, bez ičeg posle:\n'+
     '###AKCIJA###\n[{"tip":"izmeni","stavka_id":"...","polja":{"mesto":"nova vrednost"}}]\n###KRAJ###\n'+
-    'Pravila: "tip" je "izmeni", "obrisi" ili "dodaj". Za "izmeni": "stavka_id" (tačan id) + "polja" (samo polja koja se menjaju: naziv/mesto/napomena). Za "obrisi": samo "stavka_id". Za "dodaj": bez "stavka_id", "polja" ima bar "naziv" i "mesto". '+
+    'Pravila: "tip" je "izmeni", "obrisi" ili "dodaj". Za "izmeni": "stavka_id" (tačan id) + "polja" (samo polja koja se menjaju: naziv/mesto). Za "obrisi": samo "stavka_id". Za "dodaj": bez "stavka_id", "polja" ima bar "naziv" i "mesto". '+
     'Ako ne predlažeš izmenu, NE dodaji ###AKCIJA### blok uopšte.';
 
   const history_parts = (history||[]).filter(m=>!m.thinking).map(m=>({ role: m.role==='user'?'user':'model', parts:[{text:m.text}] }));
@@ -1722,46 +1767,74 @@ async function askAIAboutItems(question, history){
 /* Ukucaj ili izgovori: rečenica se ODMAH čuva (kao Zakazivanje/Troškovi) — bez obrasca. AI odvaja stvar, mesto i napomenu;
    ako stvar sa istim nazivom već postoji, menja joj se mesto (stvar je premeštena), ne pravi se duplikat.
    Bez ključa ili kad AI ne uspe: cela rečenica se čuva kao naziv, da se ništa ne izgubi, i to se kaže gore. */
+/* v2: polje za glas i tekst je stalno dole na početnom ekranu (kao Zakazivanje). Pravi se JEDNOM, van #app, pa ga
+   render() ne dira (gboard-backspace: dok tastatura radi, kod ne menja tekst — ni zamenom elementa). Posle unosa AI
+   odmah sačuva i otvara se kartica stvari. Bez ključa ili kad AI ne uspe: rečenica se čuva kao naziv, kartica se otvara. */
 let quickBusy = false;
+function buildEntryBar(){
+  if(document.getElementById('entryBar')) return;
+  const b = document.createElement('div'); b.className = 'bottom-bar'; b.id = 'entryBar';
+  b.innerHTML = '<div class="entry-row entry-row-input"><div class="entry-input-wrap">'+
+    '<textarea id="manualInput" rows="1" enterkeyhint="send" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Šta i gde, npr. pasoš je u spavaćoj sobi, u fioci"></textarea>'+
+    '</div></div>'+
+    '<div class="entry-row entry-row-actions"><button class="send-btn" id="sendBtn" onmousedown="event.preventDefault()" onclick="submitQuickText()">'+ic('➤','send')+'</button></div>';
+  document.body.appendChild(b);
+  document.body.classList.add('has-entry');
+  const ta = document.getElementById('manualInput');
+  const grow = ()=>{ ta.style.height = 'auto'; ta.style.height = Math.min(ta.scrollHeight, 100)+'px'; };
+  ta.addEventListener('input', grow);
+  ta.addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ e.preventDefault(); submitQuickText(); } });
+}
+function setQuickBusy(on){
+  quickBusy = on;
+  const b = document.getElementById('sendBtn'); if(!b) return;
+  b.disabled = on; b.innerHTML = on ? '<span class="ai-spinner"></span>' : ic('➤','send');
+}
 async function submitQuickText(){
-  const inp = document.getElementById('addTextInput');
+  const inp = document.getElementById('manualInput');
   const val = inp ? inp.value.trim() : '';
   if(!val){ if(inp) inp.focus(); return; }
   if(quickBusy) return;
-  quickBusy = true;
-  closeHomeSheet();
+  if(inp) inp.blur();
+  setQuickBusy(true);
   let r = null, err = null;
   if(getApiKey()){
-    showNote('AI raspoređuje…', {busy:true});
     try{ r = await callGeminiForStvarFromText(val); }catch(e){ err = e; }
   }
-  quickBusy = false;
+  setQuickBusy(false);
+  const clear = ()=>{ const el = document.getElementById('manualInput'); if(el){ el.value = ''; el.style.height = ''; } };
   if(!r || !r.naziv){
-    const id = saveQuickItem({ naziv: val, mesto:'', napomena:'' });
+    const id = saveQuickItem({ naziv: val, mesto:'' });
     if(!id) return;
-    showNote(err ? ('AI nije uspeo ('+(err.message||err)+'). Sačuvano kao naziv — mesto dopuni ručno.') :
-      (getApiKey() ? 'AI nije prepoznao stvar. Sačuvano kao naziv — mesto dopuni ručno.' : 'Nije unet Gemini API ključ — sačuvano kao naziv, mesto dopuni ručno (Podešavanja → AI obrada).'), {warn:true});
+    clear();
+    openItemForm(id);
+    showNote(err ? ('AI nije uspeo ('+(err.message||err)+'). Sačuvano kao naziv — ispravi u kartici.') :
+      (getApiKey() ? 'AI nije prepoznao stvar. Sačuvano kao naziv — ispravi u kartici.' : 'Nije unet Gemini API ključ — sačuvano kao naziv, ispravi u kartici (Podešavanja → AI obrada).'), {warn:true});
     return;
   }
   const dup = findDuplicateItem(r.naziv, null);
   if(dup){
+    const old = dup.mesto, oldU = dup.updatedAt;
     if(r.mesto) dup.mesto = r.mesto;
-    if(r.napomena) dup.napomena = r.napomena;
     dup.updatedAt = new Date().toISOString();
-    if(!persistItems()) return;
-    render(); scrollAndHighlightItem(dup.id);
+    if(!persistItems()){ dup.mesto = old; dup.updatedAt = oldU; return; }
+    clear();
+    render(); openItemForm(dup.id);
     if(!saveFailActive()) showNote('Promenjeno mesto: „'+dup.naziv+'“'+(dup.mesto ? ' — '+dup.mesto : ''));
     return;
   }
   const id = saveQuickItem(r);
-  if(id && !saveFailActive()) showNote('Sačuvano: „'+r.naziv+'“'+(r.mesto ? ' — '+r.mesto : ' (mesto nije rečeno)'));
+  if(!id) return;
+  clear();
+  openItemForm(id);
+  if(!saveFailActive()) showNote('Sačuvano: „'+r.naziv+'“'+(r.mesto ? ' — '+r.mesto : ' (mesto nije rečeno)'));
 }
 function saveQuickItem(f){
   const now = new Date().toISOString();
-  const it = { id: uid('m'), naziv: f.naziv, mesto: f.mesto||'', napomena: f.napomena||'', ikonica:'📦', createdAt: now, updatedAt: now };
+  const it = { id: uid('m'), naziv: f.naziv, mesto: f.mesto||'', ikonica:'📦', createdAt: now, updatedAt: now };
   items.push(it);
   if(!persistItems()){ items = items.filter(x=>x.id!==it.id); render(); return null; }
-  render(); scrollAndHighlightItem(it.id);
+  render();
   return it.id;
 }
 
@@ -1985,20 +2058,24 @@ async function geminiStructuredRequest(sys, parts, schema, maxOutputTokens, time
 
 async function callGeminiForStvarFromText(rawText){
   const sys = 'Korisnik je izgovorio ili ukucao rečenicu o tome gde je ostavio ili spremio neku stvar. Tekst: "'+rawText+'". '+
-    'Razloži rečenicu na polja i vrati ISKLJUČIVO JSON objekat: '+
+    'Razloži rečenicu i vrati ISKLJUČIVO JSON objekat: '+
     '{"naziv": kratak naziv stvari na srpskom, veliko početno slovo (npr. "Pasoš", "Rezervni ključ od auta"), '+
-    '"mesto": gde se stvar nalazi, od opšteg ka posebnom — prostorija pa mesto u njoj (npr. "Spavaća soba, fioka noćnog ormarića"), veliko početno slovo, prazan string ako mesto nije rečeno, '+
-    '"napomena": dodatni detalj koji nije mesto ni naziv (npr. "U plavoj fascikli"), inače prazan string}. '+
+    '"mesto": gde se stvar nalazi, od opšteg ka posebnom — prostorija pa mesto u njoj, pa svi ostali rečeni detalji (npr. "Spavaća soba, fioka noćnog ormarića, u plavoj fascikli"), veliko početno slovo, prazan string ako mesto nije rečeno}. '+
     'Postojeće stvari: '+JSON.stringify(items.map(i=>i.naziv))+' — ako se rečenica odnosi na neku od njih (npr. premeštena je), vrati TAČNO taj naziv. '+
-    'Postojeća mesta: '+JSON.stringify(knownPlaces())+' — ako je u pitanju isto mesto, vrati TAČNO taj zapis. '+
+    'Postojeća mesta: '+JSON.stringify(knownPlaces())+' — ako je u pitanju isto mesto, počni TAČNO tim zapisom. '+
     'Ne izmišljaj ništa što nije rečeno.';
-  const result = await geminiStructuredRequest(sys, [{ text: rawText }], { type:'object', properties:{ naziv:{ type:'string' }, mesto:{ type:'string' }, napomena:{ type:'string' } }, required:['naziv','mesto','napomena'] }, 400, 30000, 'Ukucaj ili izgovori: '+rawText.slice(0,40));
-  return { naziv: String(result.naziv||'').trim(), mesto: String(result.mesto||'').trim(), napomena: String(result.napomena||'').trim() };
+  const result = await geminiStructuredRequest(sys, [{ text: rawText }], { type:'object', properties:{ naziv:{ type:'string' }, mesto:{ type:'string' } }, required:['naziv','mesto'] }, 400, 30000, 'Glas/tekst: '+rawText.slice(0,40));
+  return { naziv: String(result.naziv||'').trim(), mesto: String(result.mesto||'').trim() };
 }
+/* v2: JEDNA kartica stvari (i za novu i za postojeću): naziv u naslovu (dodir = izmena), velika profilna slika (prva u nizu),
+   „Gde se nalazi“, dole Slikaj · Galerija · Otkaži · Sačuvaj. Sačuvaj je bled dok nema izmene. */
+let formOrig = '';
+function draftKey(){ return formDraft ? JSON.stringify([formDraft.naziv.trim(), formDraft.mesto.trim(), formDraft.slike.length, formDraft.slike.map(p=>p.length)]) : ''; }
 function openItemForm(editId, swapFromFn){
-  formEditId = editId;
+  formEditId = editId || null;
   const it = editId ? getItem(editId) : null;
-  formDraft = { naziv: it ? (it.naziv||'') : '', mesto: it ? (it.mesto||'') : '', napomena: it ? (it.napomena||'') : '', slika: it ? slikaOf(it) : null };
+  formDraft = { naziv: it ? (it.naziv||'') : '', mesto: it ? (it.mesto||'') : '', slike: it ? slikeOf(it) : [] };
+  formOrig = editId ? draftKey() : JSON.stringify(['','',0,[]]);
   formAnalyzing = false;
   renderItemForm();
   if(!formCloseFn){
@@ -2006,14 +2083,15 @@ function openItemForm(editId, swapFromFn){
       const b = document.getElementById('formBackdrop');
       if(b) b.remove();
       formDraft = null; formEditId = null;
-      if(!document.getElementById('detailBackdrop')) document.body.style.overflow='';
+      document.body.style.overflow='';
       formCloseFn = null;
     };
     if(swapFromFn){ swapOverlay(swapFromFn, formCloseFn); }
     else { pushOverlay(formCloseFn); }
   }
 }
-function updateDraft(field, value){ formDraft[field] = value; }
+function updateSaveDim(){ const b = document.getElementById('cdSave'); if(b) b.classList.toggle('dim', draftKey() === formOrig); }
+function updateDraft(field, value){ formDraft[field] = value; updateSaveDim(); }
 /* MODUL gboard-backspace v3 — v3 (Apoteka v56): polje za lozinku/ključ pokazuje tačkice umesto starog teksta.
    v2 — izvor: Zakazivanje guma v13 (probano na Zoranovom telefonu 26.10.2026: mikrofon iz prvog dodira,
    Backspace nazad bez brisanja). ZAMENJUJE v1 (Apoteka v47) — v1 ima grešku sa mikrofonom Gboard-a.
@@ -2085,7 +2163,7 @@ function wireBackspace(el, prev){
   el.addEventListener('input', () => { if(pristineArmed.has(el) && el.value !== '') disarmField(el, false); });
 }
 function wireFormFields(){
-  const ids = ['fNaziv','fMesto','fNapomena'];
+  const ids = ['fNaziv','fMesto'];
   const els = ids.map(id=>document.getElementById(id));
   els.forEach((el,i)=> wireBackspace(el, i>0 ? els[i-1] : null));
 }
@@ -2093,27 +2171,27 @@ function renderItemForm(){
   let b = document.getElementById('formBackdrop');
   const isNew = !b;
   if(isNew){ b = document.createElement('div'); b.className='modal-backdrop'; b.id='formBackdrop'; }
-  const photoSectionHtml = formDraft.slika ?
-    ('<div class="photo-preview-box"><img src="'+formDraft.slika+'"><div class="photo-preview-actions">'+
-     '<button class="pp-change" onclick="openFormAttachMenu()">Promeni</button>'+
-     '<button class="pp-remove" onclick="removeFormPhoto()">Ukloni</button>'+
-     '</div></div>') :
-    ('<div class="photo-attach-btn" onclick="openFormAttachMenu()"><span class="pa-icon">📷</span> Dodaj fotografiju</div>');
-  const analyzingHtml = formAnalyzing ? '<div class="ai-analyzing"><span class="ai-spinner"></span> AI prepoznaje stvar...</div>' : '';
+  const it = formEditId ? getItem(formEditId) : null;
+  const n = formDraft.slike.length;
+  const TA = 'autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"';
+  const big = n ? '<button type="button" class="cd-big" onclick="openViewer(0)"><img src="'+formDraft.slike[0]+'"><span class="cd-cnt">1 / '+n+'</span></button>'
+    : '<div class="cd-big"><span class="cd-empty-ic">🖼️</span>Još nema slike — Slikaj ili Galerija dole</div>';
   const oldBody = b.querySelector('.ff-body'); const keepScroll = oldBody ? oldBody.scrollTop : 0;
   b.innerHTML = '<div class="modal form-full">'+
-    '<div class="ff-head"><h2 class="serif">'+(formEditId?'Izmeni stvar':'Dodaj stvar')+'</h2>'+
+    '<div class="ff-head">'+
+    '<label class="cd-ttl"><input id="fNaziv" type="text" '+TA+' value="'+escapeHtml(formDraft.naziv)+'" oninput="updateDraft(\'naziv\',this.value)" placeholder="Naziv stvari"><span class="cd-pen">✎</span></label>'+
+    (formEditId ? '<button class="cd-del" onclick="confirmDeleteItem(\''+formEditId+'\')">Obriši</button>' : '')+
     '<button class="modal-close-x" onclick="closeItemForm()" aria-label="Zatvori">✕</button></div>'+
     '<div class="ff-body">'+
-    '<div class="field"><label>Fotografija (stvar ili mesto)</label>'+photoSectionHtml+analyzingHtml+'</div>'+
-    '<div class="field"><label>Naziv</label><input id="fNaziv" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" value="'+escapeHtml(formDraft.naziv)+'" oninput="updateDraft(\'naziv\',this.value)" placeholder="npr. Pasoš"></div>'+
-    '<div class="field"><label>Mesto</label><input id="fMesto" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" list="placeList" value="'+escapeHtml(formDraft.mesto)+'" oninput="updateDraft(\'mesto\',this.value)" placeholder="npr. Spavaća soba, fioka noćnog ormarića">'+
-    '<datalist id="placeList">'+knownPlaces().map(c=>'<option value="'+escapeHtml(c)+'">').join('')+'</datalist></div>'+
-    '<div class="field"><label>Napomena</label><textarea id="fNapomena" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" oninput="updateDraft(\'napomena\',this.value)" placeholder="npr. u plavoj fascikli">'+escapeHtml(formDraft.napomena)+'</textarea></div>'+
+    '<div class="field">'+big+'<div id="cdStatus">'+cardStatusHtml()+'</div></div>'+
+    '<div class="field"><label>Gde se nalazi</label><textarea id="fMesto" rows="3" style="min-height:84px" '+TA+' oninput="updateDraft(\'mesto\',this.value)" placeholder="npr. Spavaća soba, fioka noćnog ormarića, u plavoj fascikli">'+escapeHtml(formDraft.mesto)+'</textarea></div>'+
+    (it && (it.updatedAt||it.createdAt) ? '<div class="cd-meta">Zabeleženo '+fmtDatum(it.updatedAt||it.createdAt)+'</div>' : '')+
     '</div>'+
-    '<div class="modal-actions ff-foot">'+
-    '<button class="cancel-btn" onclick="closeItemForm()">Otkaži</button>'+
-    '<button class="save-btn" onclick="saveItemForm()">Sačuvaj</button>'+
+    '<div class="modal-actions ff-foot cd-foot">'+
+    '<button class="home-sq" onclick="openCamera()"><span class="sq-box">📷</span>Slikaj</button>'+
+    '<button class="home-sq" onclick="pickGallery()"><span class="sq-box">🖼️</span>Galerija</button>'+
+    '<button class="home-sq" onclick="closeItemForm()"><span class="sq-box">✕</span>Otkaži</button>'+
+    '<button class="home-sq cd-save" id="cdSave" onclick="saveItemForm()"><span class="sq-box">✓</span>Sačuvaj</button>'+
     '</div></div>';
   if(keepScroll){ const nb = b.querySelector('.ff-body'); if(nb) nb.scrollTop = keepScroll; }
 
@@ -2123,12 +2201,23 @@ function renderItemForm(){
     b.addEventListener('click',(e)=>{ if(e.target===b) closeItemForm(); });
   }
   wireFormFields();
+  updateSaveDim();
 }
+/* red ispod slike: AI prepoznaje naziv / šta je AI video na slikama (samo dok su slike iste kao sačuvane) */
+function cardStatusHtml(){
+  if(!formDraft) return '';
+  if(formAnalyzing) return '<div class="ai-analyzing" style="margin-top:8px"><span class="ai-spinner"></span> AI prepoznaje stvar...</div>';
+  const it = formEditId ? getItem(formEditId) : null;
+  if(it && it.opisSlika && formDraft.slike.length && it.opisSig === picSig(formDraft.slike)) return '<div class="cd-opis">Na slikama: '+escapeHtml(it.opisSlika)+'</div>';
+  return '';
+}
+function refreshCardStatus(){ const el = document.getElementById('cdStatus'); if(el) el.innerHTML = cardStatusHtml(); }
 function closeItemForm(){
   if(formCloseFn){ closeOverlay(formCloseFn); formCloseFn = null; }
 }
 function saveItemForm(){
-  if(!formDraft.naziv || !formDraft.naziv.trim()){ const el=document.getElementById('fNaziv'); if(el) el.focus(); return; }
+  if(!formDraft.naziv || !formDraft.naziv.trim()){ showNote('Upiši naziv stvari gore u naslovu.', {warn:true}); const el=document.getElementById('fNaziv'); if(el) el.focus(); return; }
+  if(formEditId && draftKey() === formOrig){ closeItemForm(); return; }
   const editId = formEditId;
   if(!editId){
     const dup = findDuplicateItem(formDraft.naziv, editId);
@@ -2141,27 +2230,29 @@ function saveItemForm(){
 }
 function doSaveItem(editId){
   const now = new Date().toISOString();
-  const f = { naziv: (formDraft.naziv||'').trim(), mesto: (formDraft.mesto||'').trim(), napomena: (formDraft.napomena||'').trim() };
-  const pic = formDraft.slika || null;
+  const f = { naziv: (formDraft.naziv||'').trim(), mesto: (formDraft.mesto||'').trim() };
+  const pics = formDraft.slike.slice();
   let id = editId, old = null;
   if(editId){
     const it = getItem(editId);
     old = Object.assign({}, it);
     Object.assign(it, f, { updatedAt: now });
+    if(!pics.length){ delete it.opisSlika; delete it.opisSig; }
   } else {
     id = uid('m');
     items.push(Object.assign({ id: id, ikonica:'📦', createdAt: now, updatedAt: now }, f));
   }
-  if(!persistItems()){   /* nije upisano: vraća se staro stanje, obrazac ostaje otvoren */
-    if(editId){ Object.assign(getItem(editId), old); } else { items = items.filter(x=>x.id!==id); }
+  if(!persistItems()){   /* nije upisano: vraća se staro stanje, kartica ostaje otvorena */
+    if(editId){ const it = getItem(editId); Object.keys(it).forEach(k=>delete it[k]); Object.assign(it, old); } else { items = items.filter(x=>x.id!==id); }
     return;
   }
-  if(pic !== (SLIKE.get(id) || null)) Slike.postavi(id, pic);
+  const picsChanged = picSig(pics) !== picSig(SLIKE.get(id)) || pics.some((p,i)=> p !== (SLIKE.get(id)||[])[i]);
+  const done = picsChanged ? Slike.postavi(id, pics) : Promise.resolve(true);
   render();
   closeItemForm();
-  if(editId) renderDetail();
-  else scrollAndHighlightItem(id);
+  if(!editId) scrollAndHighlightItem(id);
   if(!saveFailActive()) showNote('Sačuvano: „'+f.naziv+'“'+(f.mesto ? ' — '+f.mesto : ''));
+  if(picsChanged) done.then(ok=>{ render(); if(ok) opisSlikaRun(); });
 }
 function scrollAndHighlightItem(id){
   setTimeout(()=>{
@@ -2173,221 +2264,214 @@ function scrollAndHighlightItem(id){
   }, 150);
 }
 
-/* ---------- ATTACH FOTOGRAFIJE + AI CITANJE ---------- */
-let attachCloseFn = null;
-function openFormAttachMenu(){
-  const m = document.createElement('div'); m.className='modal-backdrop small-modal'; m.id='attachMenuBackdrop';
-  m.innerHTML = '<div class="modal" style="border-radius:20px;">'+
-    '<button class="modal-close-x" onclick="closeFormAttachMenu()">✕</button>'+
-    '<h2 class="serif" style="font-size:17px;">Fotografija</h2>'+
-    '<div class="attach-menu-options">'+
-    '<button class="attach-menu-opt" onclick="pickPhotoFor(\'camera\')"><span class="ao-icon">📷</span><span>Kamera</span></button>'+
-    '<button class="attach-menu-opt" onclick="pickPhotoFor(\'gallery\')"><span class="ao-icon">🖼️</span><span>Galerija</span></button>'+
-    '</div></div>';
-  document.body.appendChild(m);
-  m.addEventListener('click',(e)=>{ if(e.target===m) closeFormAttachMenu(); });
-  attachCloseFn = ()=>{ const mm=document.getElementById('attachMenuBackdrop'); if(mm) mm.remove(); attachCloseFn=null; };
-  pushOverlay(attachCloseFn);
+/* ---------- v2 FOTOGRAFIJE: cele slike (bez isecanja), umanjene na 1600 px po dužoj strani, JPEG 0,85 ----------
+   Galerija: više slika odjednom. Slikaj: kamera unutar aplikacije (getUserMedia + ImageCapture.takePhoto, MDN), više slika
+   zaredom, pa Gotovo. Nema kamere / nema dozvole → sistemska kamera (jedna slika). */
+const PIC_MAX = 1600, PIC_Q = 0.85;
+function loadImg(src){ return new Promise((res, rej)=>{ const im = new Image(); im.onload = ()=>res(im); im.onerror = ()=>rej(new Error('Slika ne može da se učita.')); im.src = src; }); }
+async function shrinkPic(src, max, q){
+  const im = await loadImg(src);
+  const k = Math.min(1, (max||PIC_MAX) / Math.max(im.naturalWidth, im.naturalHeight));
+  const c = document.createElement('canvas');
+  c.width = Math.max(1, Math.round(im.naturalWidth * k)); c.height = Math.max(1, Math.round(im.naturalHeight * k));
+  c.getContext('2d').drawImage(im, 0, 0, c.width, c.height);
+  return c.toDataURL('image/jpeg', q || PIC_Q);
 }
-function closeFormAttachMenu(){
-  if(attachCloseFn){ closeOverlay(attachCloseFn); attachCloseFn = null; }
-}
-function pickPhotoFor(kind){
-  const inp = document.createElement('input');
-  inp.type = 'file';
-  inp.accept = 'image/*';
-  if(kind==='camera') inp.capture = 'environment';
-  inp.onchange = ()=>{
-    const f = inp.files && inp.files[0];
-    if(!f) return;
-    const reader = new FileReader();
-    reader.onload = (e)=>{
-      const oldFn = attachCloseFn;
-      attachCloseFn = null;
-      openCropScreen(e.target.result, 'main', oldFn);
-    };
-    reader.readAsDataURL(f);
-  };
-  inp.click();
-}
-function removeFormPhoto(){ formDraft.slika = null; renderItemForm(); }
-function handlePickedMedia(dataUrl){
-  formDraft.slika = dataUrl;
+function blobToPic(blob){ const u = URL.createObjectURL(blob); return shrinkPic(u).finally(()=>URL.revokeObjectURL(u)); }
+function addPicsToDraft(arr){
+  if(!formDraft || !arr.length) return;
+  formDraft.slike = formDraft.slike.concat(arr);
   renderItemForm();
   triggerAIPhotoRead();
 }
-
-/* ---------- RUČNO OPSECANJE FOTOGRAFIJE ---------- */
-let cropState = null;
-let cropCloseFn = null;
-function openCropScreen(dataUrl, purpose, swapFromFn){
-  const img = new Image();
-  img.onload = ()=>{ buildCropScreen(dataUrl, img, purpose, swapFromFn); };
-  img.src = dataUrl;
-}
-function buildCropScreen(dataUrl, imgEl, purpose, swapFromFn){
-  const stageMaxW = Math.min(window.innerWidth - 32, 480);
-  const stageMaxH = window.innerHeight * 0.6;
-  const fitScale = Math.min(1, stageMaxW / imgEl.naturalWidth, stageMaxH / imgEl.naturalHeight);
-  const dispW = imgEl.naturalWidth * fitScale;
-  const dispH = imgEl.naturalHeight * fitScale;
-  const boxSize = Math.min(dispW, dispH) * 0.75;
-  cropState = {
-    dataUrl, img: imgEl, scale: fitScale, dispW, dispH, purpose: purpose||'main',
-    box: { x: (dispW-boxSize)/2, y: (dispH-boxSize)/2, w: boxSize, h: boxSize },
-    drag: null, onMove: null, onUp: null
+function pickGallery(){ pickFiles(false); }
+function pickFiles(camera){
+  const inp = document.createElement('input');
+  inp.type = 'file'; inp.accept = 'image/*';
+  if(camera) inp.capture = 'environment'; else inp.multiple = true;
+  inp.onchange = async ()=>{
+    const fs = Array.from(inp.files || []); if(!fs.length) return;
+    const out = [];
+    for(const f of fs){ try{ out.push(await blobToPic(f)); }catch(e){ logError('slike', 'Galerija: '+((e && e.message) || e)); } }
+    if(out.length < fs.length) showNote('Neke slike nisu mogle da se učitaju ('+(fs.length-out.length)+').', {warn:true});
+    addPicsToDraft(out);
   };
-  const headerText = 'Prevuci i uokviri deo slike koji želiš da zadržiš';
-  const root = document.createElement('div');
-  root.className = 'crop-overlay';
-  root.id = 'cropOverlayRoot';
-  root.innerHTML =
-    '<div class="crop-header">'+headerText+'</div>'+
-    '<div class="crop-stage" id="cropStage">'+
-    '<div class="crop-img-wrap" id="cropImgWrap" style="width:'+dispW+'px;height:'+dispH+'px;">'+
-    '<img src="'+dataUrl+'" style="width:100%;height:100%;display:block;" draggable="false">'+
-    '<div class="crop-box" id="cropBox"><div class="crop-handle" id="cropHandle"></div></div>'+
-    '</div></div>'+
-    '<div class="crop-actions">'+
-    '<button class="crop-skip" onclick="skipCrop()">Preskoči (cela slika)</button>'+
-    '<button class="crop-confirm" onclick="confirmCrop()">Sačuvaj isečak</button>'+
-    '</div>';
-  document.body.appendChild(root);
-  updateCropBoxStyle();
-  attachCropDragHandlers();
-  cropCloseFn = ()=>{
-    if(cropState){
-      if(cropState.onMove) window.removeEventListener('pointermove', cropState.onMove);
-      if(cropState.onUp){ window.removeEventListener('pointerup', cropState.onUp); window.removeEventListener('pointercancel', cropState.onUp); }
-    }
-    const el = document.getElementById('cropOverlayRoot');
-    if(el) el.remove();
-    cropState = null;
-    cropCloseFn = null;
+  inp.click();
+}
+let camCloseFn = null, camStream = null, camShots = [], camBusy = false;
+async function openCamera(){
+  if(!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia)){ pickFiles(true); return; }
+  camShots = []; camBusy = false;
+  const el = document.createElement('div'); el.className = 'cam-screen'; el.id = 'camScreen';
+  el.innerHTML = '<div class="cam-top"><button class="cam-btn" onclick="closeCamera()" aria-label="Nazad">‹</button><b id="camCount">Slikano: 0</b><span style="width:42px"></span></div>'+
+    '<div class="cam-view"><video id="camVideo" playsinline muted autoplay></video><div class="cam-flash" id="camFlash"></div></div>'+
+    '<div class="cam-bot"><div class="cam-thumbs" id="camThumbs"></div>'+
+    '<button class="cam-shot" id="camShot" onclick="camTake()" aria-label="Slikaj"><span></span></button>'+
+    '<div class="cam-done"><button onclick="closeCamera()">Gotovo</button></div></div>';
+  document.body.appendChild(el);
+  /* izlaz (Gotovo, ‹ ili korak nazad): snimljene slike UVEK idu u karticu — ništa se ne gubi; višak se briše u pregledu */
+  camCloseFn = ()=>{
+    if(camStream){ camStream.getTracks().forEach(t=>t.stop()); camStream = null; }
+    const x = document.getElementById('camScreen'); if(x) x.remove();
+    const shots = camShots; camShots = []; camCloseFn = null;
+    if(shots.length) addPicsToDraft(shots);
   };
-  if(swapFromFn){ swapOverlay(swapFromFn, cropCloseFn); }
-  else { pushOverlay(cropCloseFn); }
-}
-function updateCropBoxStyle(){
-  const el = document.getElementById('cropBox');
-  if(!el || !cropState) return;
-  const b = cropState.box;
-  el.style.left = b.x+'px'; el.style.top = b.y+'px';
-  el.style.width = b.w+'px'; el.style.height = b.h+'px';
-}
-function attachCropDragHandlers(){
-  const box = document.getElementById('cropBox');
-  const handle = document.getElementById('cropHandle');
-  const wrap = document.getElementById('cropImgWrap');
-  if(!box || !handle || !wrap || !cropState) return;
-
-  function pos(e){
-    const rect = wrap.getBoundingClientRect();
-    return { x: e.clientX - rect.left, y: e.clientY - rect.top };
-  }
-  function onMoveStart(e){
-    e.preventDefault();
-    const p = pos(e);
-    cropState.drag = { type:'move', startX:p.x, startY:p.y, origX:cropState.box.x, origY:cropState.box.y };
-  }
-  function onResizeStart(e){
-    e.preventDefault(); e.stopPropagation();
-    const p = pos(e);
-    cropState.drag = { type:'resize', startX:p.x, startY:p.y, origW:cropState.box.w, origH:cropState.box.h };
-  }
-  function onMove(e){
-    if(!cropState || !cropState.drag) return;
-    e.preventDefault();
-    const p = pos(e);
-    const d = cropState.drag;
-    if(d.type==='move'){
-      let nx = d.origX + (p.x - d.startX);
-      let ny = d.origY + (p.y - d.startY);
-      nx = Math.max(0, Math.min(nx, cropState.dispW - cropState.box.w));
-      ny = Math.max(0, Math.min(ny, cropState.dispH - cropState.box.h));
-      cropState.box.x = nx; cropState.box.y = ny;
-    } else if(d.type==='resize'){
-      let nw = d.origW + (p.x - d.startX);
-      let nh = d.origH + (p.y - d.startY);
-      nw = Math.max(40, Math.min(nw, cropState.dispW - cropState.box.x));
-      nh = Math.max(40, Math.min(nh, cropState.dispH - cropState.box.y));
-      cropState.box.w = nw; cropState.box.h = nh;
-    }
-    updateCropBoxStyle();
-  }
-  function onUp(){ if(cropState) cropState.drag = null; }
-
-  box.addEventListener('pointerdown', onMoveStart);
-  handle.addEventListener('pointerdown', onResizeStart);
-  window.addEventListener('pointermove', onMove);
-  window.addEventListener('pointerup', onUp);
-  window.addEventListener('pointercancel', onUp);
-  cropState.onMove = onMove;
-  cropState.onUp = onUp;
-}
-function closeCropScreen(){
-  if(cropCloseFn){ closeOverlay(cropCloseFn); cropCloseFn = null; }
-}
-function skipCrop(){
-  if(!cropState){ closeCropScreen(); return; }
-  const { img, purpose } = cropState;
-  const maxDim = 1100;
-  let outW = img.naturalWidth, outH = img.naturalHeight;
-  if(outW > maxDim || outH > maxDim){
-    const ratio = Math.min(maxDim/outW, maxDim/outH);
-    outW = outW*ratio; outH = outH*ratio;
-  }
-  const canvas = document.createElement('canvas');
-  canvas.width = Math.max(1, Math.round(outW));
-  canvas.height = Math.max(1, Math.round(outH));
-  const ctx = canvas.getContext('2d');
-  ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-  const resizedDataUrl = canvas.toDataURL('image/jpeg', 0.85);
-  closeCropScreen();
-  handlePickedMedia(resizedDataUrl, purpose);
-}
-function confirmCrop(){
-  if(!cropState) return;
-  const { img, scale, box, purpose } = cropState;
-  const sx = box.x/scale, sy = box.y/scale, sw = box.w/scale, sh = box.h/scale;
-  const maxDim = 900;
-  let outW = sw, outH = sh;
-  if(outW > maxDim || outH > maxDim){
-    const ratio = Math.min(maxDim/outW, maxDim/outH);
-    outW = outW*ratio; outH = outH*ratio;
-  }
-  const canvas = document.createElement('canvas');
-  canvas.width = Math.max(1, Math.round(outW));
-  canvas.height = Math.max(1, Math.round(outH));
-  const ctx = canvas.getContext('2d');
-  ctx.drawImage(img, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
-  const croppedDataUrl = canvas.toDataURL('image/jpeg', 0.85);
-  closeCropScreen();
-  handlePickedMedia(croppedDataUrl, purpose);
-}
-
-/* AI sa slike: predlaže SAMO naziv stvari, i to samo kad je polje Naziv prazno (fotografija može biti i mesta, ne stvari). */
-async function triggerAIPhotoRead(){
-  if(!getApiKey() || (formDraft.naziv||'').trim()) return;
-  formAnalyzing = true;
-  renderItemForm();
+  pushOverlay(camCloseFn);
   try{
-    const r = await callGeminiForStvarFromPhoto(formDraft.slika);
-    if(formDraft && r.naziv && !(formDraft.naziv||'').trim()) formDraft.naziv = r.naziv;
-  } catch(err){
+    camStream = await navigator.mediaDevices.getUserMedia({ audio:false, video:{ facingMode:{ ideal:'environment' }, width:{ ideal:4096 }, height:{ ideal:3072 } } });
+    if(!camCloseFn){ camStream.getTracks().forEach(t=>t.stop()); camStream = null; return; }
+    const v = document.getElementById('camVideo'); v.srcObject = camStream; await v.play().catch(()=>{});
+  }catch(e){
+    logError('kamera', (e && (e.name+': '+e.message)) || String(e));
+    closeCamera();
+    showNote(e && e.name==='NotAllowedError' ? 'Kamera nije dozvoljena — otvaram kameru telefona (dozvola: katanac pored adrese → Kamera).' : 'Kamera u aplikaciji ne radi — otvaram kameru telefona.', {warn:true});
+    pickFiles(true);
+  }
+}
+function closeCamera(){ if(camCloseFn) closeOverlay(camCloseFn); }
+async function camTake(){
+  if(camBusy || !camStream) return;
+  camBusy = true;
+  const btn = document.getElementById('camShot'); if(btn) btn.disabled = true;
+  const fl = document.getElementById('camFlash'); if(fl){ fl.classList.add('on'); setTimeout(()=>fl.classList.remove('on'), 60); }
+  try{
+    let pic = null;
+    const track = camStream.getVideoTracks()[0];
+    if('ImageCapture' in window){
+      try{ pic = await blobToPic(await new ImageCapture(track).takePhoto()); }catch(e){ logError('kamera', 'takePhoto: '+((e && e.message) || e)); }
+    }
+    if(!pic){   /* rezerva: kadar iz videa (manja rezolucija) */
+      const v = document.getElementById('camVideo'); const c = document.createElement('canvas');
+      c.width = v.videoWidth; c.height = v.videoHeight; c.getContext('2d').drawImage(v, 0, 0);
+      pic = await shrinkPic(c.toDataURL('image/jpeg', 0.92));
+    }
+    if(camCloseFn){
+      camShots.push(pic);
+      const cnt = document.getElementById('camCount'); if(cnt) cnt.textContent = 'Slikano: '+camShots.length;
+      const th = document.getElementById('camThumbs'); if(th) th.innerHTML = camShots.slice(-3).map(p=>'<img src="'+p+'">').join('');
+    }
+  }catch(e){ logError('kamera', (e && e.message) || String(e)); showNote('Slikanje nije uspelo.', {warn:true}); }
+  camBusy = false;
+  const b2 = document.getElementById('camShot'); if(b2) b2.disabled = false;
+}
+/* pregled slika preko celog ekrana: prevlačenje = sledeća/prethodna, dodir na sliku = nazad bez promene */
+let vwCloseFn = null, vwIdx = 0;
+function openViewer(i){
+  if(!formDraft || !formDraft.slike.length) return;
+  vwIdx = Math.max(0, Math.min(i||0, formDraft.slike.length-1));
+  const el = document.createElement('div'); el.className = 'vw-screen'; el.id = 'vwScreen';
+  document.body.appendChild(el);
+  renderViewer();
+  let x0 = 0, y0 = 0, t0 = 0, on = false;
+  el.addEventListener('pointerdown', e=>{ if(e.target.closest('button')) return; on = true; x0 = e.clientX; y0 = e.clientY; t0 = Date.now(); });
+  el.addEventListener('pointerup', e=>{
+    if(!on) return; on = false;
+    const dx = e.clientX - x0, dy = e.clientY - y0;
+    if(Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)){ viewerGo(dx < 0 ? 1 : -1); return; }
+    if(Math.abs(dx) < 12 && Math.abs(dy) < 12 && Date.now() - t0 < 500 && e.target.closest('.vw-img')) closeViewer();
+  });
+  el.addEventListener('pointercancel', ()=>{ on = false; });
+  vwCloseFn = ()=>{ const x = document.getElementById('vwScreen'); if(x) x.remove(); vwCloseFn = null; };
+  pushOverlay(vwCloseFn);
+}
+function renderViewer(){
+  const el = document.getElementById('vwScreen'); if(!el || !formDraft) return;
+  const n = formDraft.slike.length, prof = vwIdx === 0;
+  el.innerHTML = '<div class="vw-top"><span style="width:42px"></span><b>'+(vwIdx+1)+' / '+n+'</b><button class="cam-btn vw-del" onclick="viewerDelete()" aria-label="Obriši sliku">🗑</button></div>'+
+    '<div class="vw-img"><img src="'+formDraft.slike[vwIdx]+'"></div>'+
+    '<div class="vw-bot"><button class="vw-prof" onclick="viewerSetProfile()"'+(prof?' disabled':'')+'>'+(prof ? '★ Profilna' : '★ Postavi kao profilnu')+'</button>'+
+    '<div class="vw-hint">'+(n>1 ? '‹ prevuci za sledeću › · ' : '')+'dodir na sliku = nazad bez promene</div></div>';
+}
+function viewerGo(d){ if(!formDraft) return; const n = formDraft.slike.length; if(n < 2) return; vwIdx = (vwIdx + d + n) % n; renderViewer(); }
+function closeViewer(){ if(vwCloseFn) closeOverlay(vwCloseFn); }
+function viewerSetProfile(){
+  if(!formDraft || vwIdx === 0) return;
+  const p = formDraft.slike.splice(vwIdx, 1)[0];
+  formDraft.slike.unshift(p);
+  closeViewer();
+  renderItemForm();
+}
+function viewerDelete(){
+  showConfirm('Obrisati ovu sliku iz kartice? (Konačno tek kad pritisneš Sačuvaj.)', ()=>{
+    if(!formDraft) return;
+    formDraft.slike.splice(vwIdx, 1);
+    if(!formDraft.slike.length){ closeViewer(); renderItemForm(); return; }
+    vwIdx = Math.min(vwIdx, formDraft.slike.length-1);
+    renderViewer(); renderItemForm();
+  }, 'Da, obriši');
+}
+/* AI sa slike predlaže SAMO naziv, i to kad je naslov prazan; ne crta karticu iznova (da ne prekine kucanje/glas) */
+async function triggerAIPhotoRead(){
+  if(!getApiKey() || !formDraft || (formDraft.naziv||'').trim() || !formDraft.slike.length || formAnalyzing) return;
+  formAnalyzing = true; refreshCardStatus();
+  const draft = formDraft;
+  try{
+    const r = await callGeminiForStvarFromPhoto(draft.slike[0]);
+    if(formDraft === draft && r.naziv && !(draft.naziv||'').trim()){
+      draft.naziv = r.naziv;
+      const el = document.getElementById('fNaziv');
+      if(el && document.activeElement !== el) el.value = r.naziv;
+      updateSaveDim();
+    }
+  }catch(err){
     showBanner(err && err.message ? err.message : 'Greška pri čitanju fotografije.');
   }
   formAnalyzing = false;
-  if(formDraft) renderItemForm();
+  if(formDraft === draft) refreshCardStatus();
 }
 async function callGeminiForStvarFromPhoto(dataUrl){
-  const match = /^data:([^;]+);base64,(.*)$/s.exec(dataUrl||'');
+  const small = await shrinkPic(dataUrl, 768, 0.75);
+  const match = /^data:([^;]+);base64,(.*)$/s.exec(small||'');
   if(!match) throw new Error('Neispravan format slike.');
   const sys = 'Ovo je fotografija stvari koju korisnik beleži da bi kasnije znao gde ju je ostavio. '+
     'Vrati ISKLJUČIVO JSON objekat {"naziv": kratak naziv glavne stvari na slici, na srpskom, veliko početno slovo (npr. "Pasoš", "Kutija sa alatom")}. '+
     'Ako je na slici samo prostor (polica, fioka, soba) bez jasne glavne stvari, ili nije jasno šta je, vrati prazan string. Ne izmišljaj.';
-  const result = await geminiStructuredRequest(sys, [{ inlineData: { mimeType: match[1], data: match[2] } }], { type:'object', properties:{ naziv:{ type:'string' } }, required:['naziv'] }, 200, 30000, 'Slika stvari');
+  const result = await geminiStructuredRequest(sys, [{ inlineData: { mimeType: match[1], data: match[2] } }], { type:'object', properties:{ naziv:{ type:'string' } }, required:['naziv'] }, 200, 30000, 'Naziv sa slike');
   return { naziv: String(result.naziv||'').trim() };
+}
+/* ---------- v2: opis slika za pretragu (opcija A, Zoran 13.11.) ----------
+   Posle čuvanja slika, u pozadini: SVE slike stvari u JEDNOM pozivu (umanjene na 768 px) → kratak opis onoga što se vidi
+   (it.opisSlika) + it.opisSig = potpis slika. Nov poziv samo kad se slike promene. Bez ključa/interneta: kasnije (pokretanje,
+   povratak interneta). Neuspeh se pamti do ponovnog pokretanja (da ne troši kvotu u krug). */
+let opisBusy = false; const opisFailed = new Set();
+function opisPending(){ return items.find(it=>{ const a = SLIKE.get(it.id); return a && a.length && it.opisSig !== picSig(a) && !opisFailed.has(it.id+'|'+picSig(a)); }); }
+async function opisSlikaRun(){
+  if(opisBusy) return;
+  opisBusy = true;
+  try{
+    while(getApiKey() && navigator.onLine !== false){
+      const it = opisPending(); if(!it) break;
+      const pics = SLIKE.get(it.id).slice(), sig = picSig(pics);
+      try{
+        const opis = await callGeminiOpisSlika(pics, it.naziv);
+        const cur = getItem(it.id);
+        if(cur && picSig(SLIKE.get(it.id)) === sig){
+          cur.opisSlika = opis; cur.opisSig = sig;
+          if(!persistItems()) break;
+          refreshAfterOpis(cur.id);
+        }
+      }catch(e){ opisFailed.add(it.id+'|'+sig); }
+    }
+  } finally { opisBusy = false; }
+}
+function refreshAfterOpis(id){
+  if(formDraft && formEditId === id) refreshCardStatus();
+  const a = document.activeElement;
+  if(!(a && (a.id === 'searchInput')) && !formDraft) render();
+}
+async function callGeminiOpisSlika(pics, naziv){
+  const parts = [];
+  for(const p of pics.slice(0, 8)){
+    const s = await shrinkPic(p, 768, 0.7); const m = /^data:([^;]+);base64,(.*)$/s.exec(s);
+    if(m) parts.push({ inlineData: { mimeType: m[1], data: m[2] } });
+  }
+  if(!parts.length) throw new Error('Nema slika.');
+  const sys = 'Ovo su fotografije jedne zabeležene stvari ("'+(naziv||'')+'") ili mesta gde se nalazi; korisnik će kasnije pretraživati po onome što se vidi. '+
+    'Vrati ISKLJUČIVO JSON {"opis": kratak spisak onoga što se jasno vidi na slikama, na srpskom latinicom, malim slovima, odvojeno zarezima — '+
+    'predmeti, njihova boja ili vrsta kad je važno, i čitljivi natpisi ili marke (npr. "bušilica bosch, šrafcigeri, metar, plava plastična kutija"); najviše 25 reči}. '+
+    'Ne izmišljaj ono što se ne vidi jasno.';
+  const r = await geminiStructuredRequest(sys, parts, { type:'object', properties:{ opis:{ type:'string' } }, required:['opis'] }, 300, 60000, 'Opis slika: '+String(naziv||'').slice(0,40));
+  return String(r.opis||'').trim();
 }
 
 /* ---------- TEME (čuvaju se u settings.theme, pa idu i u bekap) ---------- */
@@ -2692,17 +2776,19 @@ let helpCloseFn = null;
 function openHelpScreen(){
   const b = document.createElement('div'); b.className='modal-backdrop top'; b.id='helpBackdrop';
   const sections = [
-    { t:'Čemu služi', c:'Zapišeš gde si nešto ostavio ili spremio (pasoš, rezervni ključ, garanciju, zimske gume…), pa to kasnije brzo nađeš: stvar, mesto, fotografija i napomena.' },
-    { t:'Ukucaj ili izgovori', c:'Dodaj → Ukucaj ili izgovori: napiši ili izgovori (mikrofon na tastaturi) rečenicu, npr. „pasoš je u spavaćoj sobi, u fioci noćnog ormarića“, pa Dodaj. AI sam odvoji stvar i mesto i odmah sačuva — gore piše šta je sačuvano. Ako stvar već postoji (premestio si je), samo joj se promeni mesto. Bez Gemini ključa ili kad AI ne uspe, rečenica se sačuva kao naziv, pa mesto dopuniš ručno.' },
-    { t:'Sa fotografijom', c:'Dodaj → Slikaj stvar ili Iz galerije: uokviriš deo slike, otvori se obrazac. Fotografija može biti stvari ili mesta (npr. police). Ako je Naziv prazan, AI predloži naziv sa slike. Mesto biraš iz ponuđenih (već upisana mesta) ili upišeš novo.' },
-    { t:'Kartica stvari', c:'Dodir na stvar otvara karticu: mesto, napomena i datum kad je zabeleženo (ili poslednji put promenjeno). Izmeni menja podatke i fotografiju; dodir na fotografiju otvara je preko celog ekrana.' },
-    { t:'Pretraga i sortiranje', c:'„Pretraži“ traži po nazivu, mestu i napomeni — ignoriše veliko/malo slovo i kvačice. „Sortiraj“: Naziv, Mesto (sa naslovima po mestu) ili Najnovije.' },
+    { t:'Čemu služi', c:'Zapišeš gde si nešto ostavio ili spremio (pasoš, rezervni ključ, garanciju, zimske gume…), pa to kasnije brzo nađeš: naziv, gde se nalazi i slike.' },
+    { t:'Unos glasom ili tekstom', c:'Polje dole na početnom ekranu: izgovori (mikrofon na tastaturi) ili ukucaj rečenicu, npr. „pasoš je u spavaćoj sobi, u fioci noćnog ormarića“, pa ➤. AI odvoji stvar i mesto, odmah sačuva i otvori karticu, gde odmah možeš da ispraviš ili dodaš slike. Ako stvar već postoji (premestio si je), samo joj se promeni mesto. Bez Gemini ključa ili kad AI ne uspe, rečenica se sačuva kao naziv, pa je ispraviš u kartici.' },
+    { t:'Kartica stvari', c:'Dodir na stvar (ili „Dodaj“ gore) otvara karticu: naziv je u naslovu (dodir na njega ga menja), ispod je velika profilna slika i polje „Gde se nalazi“. Dole su Slikaj, Galerija, Otkaži i Sačuvaj. Sačuvaj je bled dok ništa ne promeniš.' },
+    { t:'Slike', c:'Slikaj otvara kameru u aplikaciji: slikaj koliko treba (gore piše „Slikano: N“), pa Gotovo — sve slike idu u karticu. Galerija: izaberi više slika odjednom. Slike se čuvaju cele (bez isecanja), umanjene da ne zauzimaju previše mesta. Prvi put Chrome traži dozvolu za kameru; bez nje se otvara obična kamera telefona.' },
+    { t:'Profilna slika', c:'Dodir na veliku sliku otvara sve slike preko celog ekrana; prevlačenjem ih listaš. „★ Postavi kao profilnu“ bira tu sliku za veliku; 🗑 briše sliku. Dodir na samu sliku vraća nazad bez promene. Sve postaje konačno tek kad pritisneš Sačuvaj.' },
+    { t:'Šta je na slikama', c:'Posle čuvanja slika AI ih u pozadini pogleda i zapiše kratak opis (ispod velike slike: „Na slikama: …“). Pretraga posle nalazi i te reči — npr. „šrafciger“ u kutiji sa alatom. Nov opis se pravi samo kad promeniš slike; bez interneta se napravi kasnije.' },
+    { t:'Pretraga', c:'„Pretraži“ traži po nazivu, mestu i opisu slika: ćirilica ili latinica, sa kvačicama ili bez, velika ili mala slova, više reči bilo kojim redom, deo reči, i bez crtica i razmaka („golf7“ = „Golf 7“). Ispod rezultata „✨ Traži sa AI“ traži po značenju (npr. „dokumenta“ nalazi pasoš). „Sortiraj“: Naziv, Mesto ili Najnovije.' },
     { t:'AI ćaskanje', c:'Dugme „AI“: pitaj „Gde je pasoš?“ ili „Šta držim u garaži?“. AI može i da predloži izmenu (npr. novo mesto) ili brisanje, ali ništa se ne menja dok sam ne potvrdiš.' },
     { t:'Prikaz i brzi meni', c:'Ikonica ▦/☰ menja prikaz između liste i mreže. Dug pritisak na stvar: zakači na vrh ili obriši.' },
     { t:'Izmena podataka', c:'Dodir na polje: stari tekst se vidi osenčen, a kucanjem ili glasom upisuješ novo. Drugi dodir vraća stari tekst za izmenu dela. Taster za brisanje u praznom polju vraća na prethodno polje.' },
-    { t:'Brisanje i korpa', c:'Povuci stvar ulevo → crveno dugme „Izbriši“, ili Obriši u kartici. Obrisano ide u korpu (Podešavanja → Korpa) i čeka zadati broj dana (podrazumevano 30), pa se samo trajno briše. U korpi izabereš stvari, pa „Vrati“ (sa svim podacima i fotografijom) ili „Obriši trajno“.' },
+    { t:'Brisanje i korpa', c:'Povuci stvar ulevo → crveno dugme „Izbriši“, ili Obriši gore u kartici. Obrisano ide u korpu (Podešavanja → Korpa) i čeka zadati broj dana (podrazumevano 30), pa se samo trajno briše. U korpi izabereš stvari, pa „Vrati“ (sa svim podacima i slikama) ili „Obriši trajno“.' },
     { t:'Obaveštenja', c:'Poruke se pojavljuju gore: zeleno kad je nešto urađeno, crveno kad nije uspelo. Nestanu same.' },
-    { t:'Rezervna kopija', c:'Podaci se čuvaju samo u Chrome-u na ovom telefonu: kad se obrišu podaci sajta, nestaju. Podešavanja → Rezervna kopija: „Podeli kopiju“ otvara meni za deljenje, pa kopiju jednim dodirom pošalješ na Google Drive ili mejlom; ime kopije ima datum i vreme. Kopija sadrži i fotografije. „Izvezi bekap“ preuzima fajl na telefon, a „Uvezi bekap“ vraća podatke iz kopije (.txt ili .json). Korpa i Gemini ključ ne ulaze u kopiju. Ako upis u memoriju telefona ikad ne uspe, gore odmah piše crveno „NIJE SAČUVANO!“.' },
+    { t:'Rezervna kopija', c:'Podaci se čuvaju samo u Chrome-u na ovom telefonu: kad se obrišu podaci sajta, nestaju. Podešavanja → Rezervna kopija: „Podeli kopiju“ otvara meni za deljenje, pa kopiju jednim dodirom pošalješ na Google Drive ili mejlom; ime kopije ima datum i vreme. Kopija sadrži i sve slike. „Izvezi bekap“ preuzima fajl na telefon, a „Uvezi bekap“ vraća podatke iz kopije (.txt ili .json). Korpa i Gemini ključ ne ulaze u kopiju. Ako upis u memoriju telefona ikad ne uspe, gore odmah piše crveno „NIJE SAČUVANO!“.' },
     { t:'Dnevnik grešaka', c:'Kad se desi greška (npr. AI ne odgovori ili upis ne uspe), aplikacija je tiho zapiše. Tada u Podešavanjima, ispod broja verzije, sitno crveno piše koliko ih ima; dodir otvara dnevnik (Kopiraj / Obriši).' },
     { t:'Brojevi u podešavanjima', c:'Broj dana (podsetnik za bekap, korpa) menjaš u polju, pa dodirneš „Sačuvaj“ pored njega ili Enter. Gore se pojavi potvrda.' },
   ];
@@ -2809,8 +2895,10 @@ function runDupYes(){ const fn=__dupYes; closeDuplicateWarning(); if(fn) fn(); }
 loadSettings();
 applyTheme(getTheme());
 loadItems();
+buildEntryBar();
 render();
-Slike.ucitaj().then(()=>{ trashPurgeExpired(); render(); });
+Slike.ucitaj().then(()=>{ trashPurgeExpired(); render(); opisSlikaRun(); });
+window.addEventListener('online', ()=> opisSlikaRun());
 
 if('serviceWorker' in navigator){
   window.addEventListener('load', ()=>{
