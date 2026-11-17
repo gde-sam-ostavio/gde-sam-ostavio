@@ -614,7 +614,20 @@ input::selection, textarea::selection{ background:color-mix(in srgb, var(--frame
 body.has-entry .list-area{ padding-bottom:150px; }
 body.searching #entryBar{ display:none; }
 /* v6 (Zoran 17.11.): fascikle (čipovi gore) i označavanje više stvari (dugi pritisak) kao u Beleškama */
-.fold-row{ display:flex; gap:8px; overflow-x:auto; margin:0 0 12px; padding:1px 0 2px; scrollbar-width:none; }
+.fold-bar{ display:flex; align-items:center; gap:8px; margin:0 0 12px; }
+.fold-bar > .fold-chip{ position:relative; z-index:1; }   /* v7: „Sve“ stoji, ostale fascikle se listaju */
+.fold-row{ flex:1; min-width:0; display:flex; gap:8px; overflow-x:auto; padding:1px 0 2px; scrollbar-width:none; -webkit-mask-image:linear-gradient(90deg, transparent 0, #000 10px, #000 calc(100% - 18px), transparent 100%); mask-image:linear-gradient(90deg, transparent 0, #000 10px, #000 calc(100% - 18px), transparent 100%); padding-left:4px; }
+.fold-search{ display:flex; align-items:center; gap:8px; border:1px solid var(--line); border-radius:12px; padding:0 12px; margin:2px 0 6px; background:var(--bg-elevated); color:var(--text-dim); }
+.fold-search input{ flex:1; min-width:0; border:none; background:transparent; color:var(--text); font-size:15.5px; font-family:inherit; padding:11px 0; outline:none; }
+.fold-search input, .fold-search input:focus{ border:none !important; outline:none !important; box-shadow:none !important; background:transparent !important; }
+.fold-search:focus-within{ border-color:var(--focus-line, var(--frame-acc)); }
+.fo-list{ position:relative; }
+.fo-row{ display:flex; align-items:center; gap:12px; padding:12px 6px; border-bottom:1px solid var(--line); background:var(--surface); font-size:16px; color:var(--text); }
+.fo-row .fo-n{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.fo-h{ flex:none; width:44px; height:36px; display:flex; align-items:center; justify-content:center; color:var(--text-dim); font-size:22px; touch-action:none; cursor:grab; -webkit-user-select:none; user-select:none; }
+.fo-row.drag{ position:relative; z-index:2; box-shadow:0 8px 22px rgba(0,0,0,.45); border-radius:10px; }
+.fo-row.shift{ transition:transform .15s ease; }
+.fo-hint{ font-size:13px; color:var(--text-dim); margin:2px 4px 8px; }
 .fold-row::-webkit-scrollbar{ display:none; }
 .fold-chip{ flex:none; height:38px; padding:0 16px; border-radius:999px; border:1px solid var(--line); background:transparent; color:var(--text); font-size:14.5px; font-weight:600; font-family:inherit; cursor:pointer; white-space:nowrap; max-width:220px; overflow:hidden; text-overflow:ellipsis; -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; }
 .fold-chip.on{ background:var(--bg-elevated); border-color:var(--frame-acc); color:var(--frame-acc); }
@@ -783,7 +796,8 @@ const HOME_IC = {
   gallery: HI('<rect x="3.5" y="4.5" width="17" height="15" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="M20.5 16l-5-5-9 8.5"/>',22),
   doc: HI('<path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4M9 12h6M9 16h6"/>',22),
   mic: HI('<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/>',22),
-  back: HI('<path d="M15 18l-6-6 6-6"/>',22)
+  back: HI('<path d="M15 18l-6-6 6-6"/>',22),
+  folder: HI('<path d="M3.5 6.5a2 2 0 0 1 2-2h4l2 2h7a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z"/><path d="M12 10v6M9 13h6"/>',24)
 };
 function stvarRec(n){ return (n%10===1 && n%100!==11) ? 'stvar' : 'stvari'; }
 function lsGet(key){ try{ const v=localStorage.getItem(key); return v===null?null:{value:v}; }catch(e){ return null; } }
@@ -1216,10 +1230,10 @@ const SEL_IC = {
 };
 function foldChipsHtml(){
   const cur = curFolder();
-  return '<div class="fold-row" id="foldRow">'+
-    '<button class="fold-chip'+(cur?'':' on')+'" onclick="setFolder(\'\')">Sve</button>'+
+  return '<div class="fold-bar"><button class="fold-chip'+(cur?'':' on')+'" onclick="setFolder(\'\')">Sve</button>'+
+    (folders.length ? '<div class="fold-row" id="foldRow">'+
     folders.map(f=>'<button class="fold-chip'+(cur===f.id?' on':'')+'" onclick="foldChipTap(\''+f.id+'\')" onpointerdown="foldPressStart(\''+f.id+'\')" onpointerup="foldPressEnd()" onpointerleave="foldPressEnd()" onpointercancel="foldPressEnd()" oncontextmenu="return false">'+escapeHtml(f.naziv)+'</button>').join('')+
-    '<button class="fold-chip add" onclick="newFolderPrompt(true)" aria-label="Nova fascikla">+</button></div>';
+    '</div>' : '')+'</div>';
 }
 let foldTimer = null, foldFired = false;
 /* posle dugog pritiska stiže i „click“ kad se prst podigne — pao bi na tek otvoren meni (pozadinu) i zatvorio ga */
@@ -1236,7 +1250,45 @@ function openFolderMenu(id){
   const f = getFolder(id); if(!f) return;
   openHomeSheet(sheetHead(escapeHtml(f.naziv))+
     '<button class="hs-row" onclick="closeHomeSheet(); renameFolderPrompt(\''+id+'\')"><span>Preimenuj</span></button>'+
+    (folders.length > 1 ? '<button class="hs-row" onclick="openFolderOrder()"><span>Promeni redosled</span></button>' : '')+
     '<button class="hs-row" style="color:var(--coral)" onclick="closeHomeSheet(); deleteFolder(\''+id+'\')"><span>Obriši fasciklu</span></button>');
+}
+/* v7: redosled fascikli — prevlačenje za ≡; čuva se odmah po spuštanju */
+function openFolderOrder(){
+  openHomeSheet(sheetHead('Redosled fascikli')+'<div class="fo-hint">Drži ≡ i prevuci gore ili dole. Čuva se odmah.</div><div class="fo-list" id="foList"></div>');
+  renderFolderOrder();
+}
+function renderFolderOrder(){
+  const el = document.getElementById('foList'); if(!el) return;
+  el.innerHTML = folders.map(f=>'<div class="fo-row" data-fid="'+f.id+'"><span class="fo-n">'+escapeHtml(f.naziv)+'</span><span class="fo-h" aria-label="Prevuci">≡</span></div>').join('');
+  el.querySelectorAll('.fo-h').forEach(h=>foDragWire(h));
+}
+function foDragWire(h){
+  let row, rows, i0, H, y0, to, pid = null;
+  h.addEventListener('pointerdown', (e)=>{
+    row = h.closest('.fo-row'); rows = [...row.parentNode.children]; i0 = rows.indexOf(row); to = i0;
+    H = row.getBoundingClientRect().height; y0 = e.clientY; pid = e.pointerId;
+    try{ h.setPointerCapture(pid); }catch(err){}
+    row.classList.add('drag'); rows.forEach(r=>{ if(r!==row) r.classList.add('shift'); });
+    e.preventDefault();
+  });
+  h.addEventListener('pointermove', (e)=>{
+    if(pid === null || e.pointerId !== pid) return;
+    const dy = Math.max(-i0*H, Math.min((rows.length-1-i0)*H, e.clientY - y0));
+    row.style.transform = 'translateY('+dy+'px)';
+    to = Math.max(0, Math.min(rows.length-1, i0 + Math.round(dy / H)));
+    rows.forEach((r,k)=>{ if(r===row) return; let t = 0; if(k > i0 && k <= to) t = -H; else if(k < i0 && k >= to) t = H; r.style.transform = t ? 'translateY('+t+'px)' : ''; });
+  });
+  const end = ()=>{
+    if(pid === null) return; pid = null;
+    if(to !== i0){
+      const old = folders.slice(); const f = folders.splice(i0, 1)[0]; folders.splice(to, 0, f);
+      if(!persistFolders()) folders = old;
+      render();
+    }
+    renderFolderOrder();
+  };
+  h.addEventListener('pointerup', end); h.addEventListener('pointercancel', end);
 }
 /* prozor sa jednim poljem (naziv fascikle) */
 let namePromptFn = null;
@@ -1257,8 +1309,8 @@ function namePrompt(title, init, onOk){
 }
 function closeNamePrompt(){ if(namePromptFn) closeOverlay(namePromptFn); }
 function folderNameTaken(v, exceptId){ const k = foldAll(v); return folders.some(f=>f.id!==exceptId && foldAll(f.naziv)===k); }
-function newFolderPrompt(open, then){
-  namePrompt('Nova fascikla', '', (v)=>{
+function newFolderPrompt(open, then, init){
+  namePrompt('Nova fascikla', init||'', (v)=>{
     if(folderNameTaken(v)){ showBanner('Fascikla „'+v+'“ već postoji.'); return; }
     const f = { id: uid('f'), naziv: v };
     folders.push(f);
@@ -1321,13 +1373,24 @@ function selPin(){
 }
 function selMoveSheet(){
   const its = selItems(); if(!its.length) return;
-  const all = (fid)=> its.every(it=>(it.folder||'')===fid);
   openHomeSheet(sheetHead('Premesti u')+
-    '<button class="hs-row" onclick="selMoveTo(\'\')"><span>Bez fascikle</span>'+(all('')?'<span class="hs-check">✓</span>':'')+'</button>'+
-    folders.map(f=>'<button class="hs-row" onclick="selMoveTo(\''+f.id+'\')"><span>'+escapeHtml(f.naziv)+'</span>'+(all(f.id)?'<span class="hs-check">✓</span>':'')+'</button>').join('')+
-    '<button class="hs-row" style="color:var(--frame-acc)" onclick="selMoveNew()"><span>+ Nova fascikla</span></button>');
+    (folders.length ? '<label class="fold-search">'+HOME_IC.search+'<input id="moveQ" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="search" placeholder="Pretraži fascikle" oninput="renderMoveList()"></label>' : '')+
+    '<div id="moveList"></div>');
+  renderMoveList();
 }
-function selMoveNew(){ closeHomeSheet(); newFolderPrompt(false, (fid)=>selMoveTo(fid)); }
+/* v7: lista se crta posebno — polje za pretragu se ne dira dok kucaš (Gboard) */
+function renderMoveList(){
+  const el = document.getElementById('moveList'); if(!el) return;
+  const its = selItems(), all = (fid)=> its.every(it=>(it.folder||'')===fid);
+  const q = document.getElementById('moveQ') ? document.getElementById('moveQ').value.trim() : '';
+  const w = foldAll(q).split(' ').filter(Boolean);
+  const hit = w.length ? folders.filter(f=>{ const k = foldAll(f.naziv); return w.every(x=>k.includes(x)); }) : folders;
+  el.innerHTML = (w.length ? '' : '<button class="hs-row" onclick="selMoveTo(\'\')"><span>Bez fascikle</span>'+(all('')?'<span class="hs-check">✓</span>':'')+'</button>')+
+    hit.map(f=>'<button class="hs-row" onclick="selMoveTo(\''+f.id+'\')"><span>'+escapeHtml(f.naziv)+'</span>'+(all(f.id)?'<span class="hs-check">✓</span>':'')+'</button>').join('')+
+    (w.length && !hit.length ? '<div class="fo-hint">Nema fascikle „'+escapeHtml(q)+'“.</div>' : '')+
+    '<button class="hs-row" style="color:var(--frame-acc)" onclick="selMoveNew()"><span>+ Nova fascikla'+(w.length && !hit.length ? ' „'+escapeHtml(q)+'“' : '')+'</span></button>';
+}
+function selMoveNew(){ const q = document.getElementById('moveQ'); const v = q ? q.value.trim() : ''; closeHomeSheet(); newFolderPrompt(false, (fid)=>selMoveTo(fid), v); }
 function selMoveTo(fid){
   if(document.getElementById('homeSheet')) closeHomeSheet();
   const its = selItems(); if(!its.length) return;
@@ -1507,6 +1570,7 @@ function render(){
         '<button class="home-sq" onclick="toggleSearch()"><span class="sq-box">'+HOME_IC.search+'</span>Pretraži</button>'+
         '<button class="home-sq" onclick="openSortSheet()"><span class="sq-box">'+HOME_IC.sort+'</span>Sortiraj</button>'+
         '<button class="home-sq" onclick="openChatMode()"><span class="sq-box">'+HOME_IC.ai+'</span>AI</button>'+
+        '<button class="home-sq" onclick="newFolderPrompt(true)"><span class="sq-box">'+HOME_IC.folder+'</span>Fascikla</button>'+
         '</div>')+foldChipsHtml())+
     '</div>'+
     '<div class="list-area">'+listHtml+(qWords.length ? aiSearchHtml(filtered.length) : '')+'</div>';
@@ -1602,7 +1666,7 @@ function confirmDeleteItem(id, swapFromFn){
 }
 
 /* ---------- ADD / EDIT FORM (draft-based, da ne izgubi unos pri osvezavanju zbog fotografije) ---------- */
-const APP_VERSION = 6; /* svaka objava: +1, isti broj u linku ?v=N i u keš imenu sw.js */
+const APP_VERSION = 7; /* svaka objava: +1, isti broj u linku ?v=N i u keš imenu sw.js */
 /* MODUL ai-dnevnik v1 — izvor: Arhiva v174 (Podešavanja → AI obrada: trošak i poslednje obrade, probano 20.10.2026.)
 Upotreba (uz modul gemini v2):
   const log = [], t0 = Date.now();
@@ -3133,8 +3197,8 @@ function openHelpScreen(){
     { t:'Pretraga', c:'„Pretraži“ traži po nazivu, mestu i opisu slika: ćirilica ili latinica, sa kvačicama ili bez, velika ili mala slova, više reči bilo kojim redom, deo reči, i bez crtica i razmaka („golf7“ = „Golf 7“). Ispod rezultata „✨ Traži sa AI“ traži po značenju (npr. „dokumenta“ nalazi pasoš). „Sortiraj“: Naziv, Mesto ili Najnovije.' },
     { t:'AI ćaskanje', c:'Dugme „AI“: pitaj „Gde je pasoš?“ ili „Šta držim u garaži?“. AI može i da predloži izmenu (npr. novo mesto) ili brisanje, ali ništa se ne menja dok sam ne potvrdiš.' },
     { t:'Prikaz', c:'Ikonica ▦/☰ menja prikaz između liste i mreže.' },
-    { t:'Fascikle', c:'Ispod dugmadi su fascikle: „Sve“ prikazuje sve stvari, dodir na fasciklu samo njene, a „+“ pravi novu. Nova stvar (dole glasom, „Dodaj“ ili AI) ide u fasciklu koja je otvorena. Dug pritisak na fasciklu: Preimenuj ili Obriši fasciklu (stvari iz nje ostaju, samo bez fascikle). Pretraga uvek traži po svim fasciklama.' },
-    { t:'Označavanje više stvari', c:'Dug pritisak na stvar je označi; dodirom označavaš još. Gore: ✕ završava (i „nazad“), ikonica desno označi sve. Dole: Zakači/Otkači (na vrh spiska), Premesti u (fasciklu ili nova fascikla) i Izbriši (u korpu).' },
+    { t:'Fascikle', c:'Ispod dugmadi su fascikle: „Sve“ (uvek levo) prikazuje sve stvari, dodir na fasciklu samo njene; ostale fascikle listaš prstom. Novu praviš dugmetom „Fascikla“ gore. Nova stvar (dole glasom, „Dodaj“ ili AI) ide u fasciklu koja je otvorena. Dug pritisak na fasciklu: Preimenuj, Promeni redosled (drži ≡ i prevuci) ili Obriši fasciklu (stvari iz nje ostaju, samo bez fascikle). Pretraga uvek traži po svim fasciklama.' },
+    { t:'Označavanje više stvari', c:'Dug pritisak na stvar je označi; dodirom označavaš još. Gore: ✕ završava (i „nazad“), ikonica desno označi sve. Dole: Zakači/Otkači (na vrh spiska), Premesti u (fasciklu — lupa gore je brzo nađe — ili nova fascikla) i Izbriši (u korpu).' },
     { t:'Izmena podataka', c:'Dodir na polje: stari tekst se vidi osenčen, a kucanjem ili glasom upisuješ novo. Drugi dodir vraća stari tekst za izmenu dela. Taster za brisanje u praznom polju vraća na prethodno polje.' },
     { t:'Brisanje i korpa', c:'Povuci stvar ulevo → crveno dugme „Izbriši“, ili Obriši dole u kartici, ili više njih odjednom: dug pritisak → označi → Izbriši. Obrisano ide u korpu (Podešavanja → Korpa) i čeka zadati broj dana (podrazumevano 30), pa se samo trajno briše. U korpi izabereš stvari, pa „Vrati“ (sa svim podacima i slikama) ili „Obriši trajno“.' },
     { t:'Obaveštenja', c:'Poruke se pojavljuju gore: zeleno kad je nešto urađeno, crveno kad nije uspelo. Nestanu same.' },
