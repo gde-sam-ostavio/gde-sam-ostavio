@@ -625,11 +625,14 @@ body.searching #entryBar{ display:none; }
 .cd-lbl{ display:flex; align-items:baseline; justify-content:space-between; gap:10px; margin-bottom:6px; }
 .cd-lbl label{ margin:0 !important; }
 .cd-mesto textarea{ flex:1 1 auto; min-height:0; resize:none; line-height:1.45; }
-.cd-done{ display:none; flex:none; border:none; background:var(--green-deep); color:var(--on-accent); border-radius:999px; padding:8px 18px; font-weight:700; font-size:14px; font-family:inherit; cursor:pointer; }
+.cd-fullbar{ display:none; align-items:center; gap:8px; }
+.cd-undo{ width:42px; height:38px; border-radius:10px; border:1px solid var(--line); background:var(--bg-elevated); color:var(--text); font-size:20px; font-family:inherit; cursor:pointer; padding:0; }
+.cd-undo.dim, .cd-done.dim{ opacity:.4; }
+.cd-done{ flex:none; border:none; background:var(--green-deep); color:var(--on-accent); border-radius:999px; padding:9px 18px; font-weight:700; font-size:14px; font-family:inherit; cursor:pointer; }
 .form-full.mesto-full .ff-head, .form-full.mesto-full .ff-foot.cd-foot, .form-full.mesto-full .cd-body > :not(.cd-mesto), .form-full.mesto-full .cd-meta{ display:none; }
 .form-full.mesto-full .cd-body{ padding-top:calc(12px + env(safe-area-inset-top,0px)); }
 .form-full.mesto-full .cd-lbl{ align-items:center; }
-.form-full.mesto-full .cd-done{ display:block; }
+.form-full.mesto-full .cd-fullbar{ display:flex; }
 .form-full.mesto-full .cd-mesto textarea{ font-size:16px; }
 .form-full .ff-foot.cd-foot{ display:flex; justify-content:space-around; align-items:flex-start; padding:10px 8px calc(12px + env(safe-area-inset-bottom)); }
 .cd-foot .home-sq{ flex:0 1 66px; width:66px; min-width:0; margin:0; }
@@ -1538,7 +1541,7 @@ let formDraft = null;
 let formEditId = null;
 let formAnalyzing = false;
 let formCloseFn = null;
-let mestoFull = false, mestoCloseFn = null; /* v3: „Gde se nalazi“ preko celog ekrana */
+let mestoFull = false, mestoCloseFn = null, mestoHist = null, mestoTimer = null; /* v3: „Gde se nalazi“ preko celog ekrana */
 
 function knownPlaces(){
   const seen = new Set(); const out = [];
@@ -2090,13 +2093,13 @@ function openItemForm(editId, swapFromFn){
   const it = editId ? getItem(editId) : null;
   formDraft = { naziv: it ? (it.naziv||'') : '', mesto: it ? (it.mesto||'') : '', slike: it ? slikeOf(it) : [] };
   formOrig = editId ? draftKey() : JSON.stringify(['','',0,[]]);
-  formAnalyzing = false;
+  formAnalyzing = false; mestoHist = null; mestoFull = false;
   renderItemForm();
   if(!formCloseFn){
     formCloseFn = ()=>{
       const b = document.getElementById('formBackdrop');
       if(b) b.remove();
-      formDraft = null; formEditId = null; mestoFull = false; mestoCloseFn = null;
+      formDraft = null; formEditId = null; mestoFull = false; mestoCloseFn = null; mestoHist = null;
       document.body.style.overflow='';
       formCloseFn = null;
     };
@@ -2104,7 +2107,7 @@ function openItemForm(editId, swapFromFn){
     else { pushOverlay(formCloseFn); }
   }
 }
-function updateSaveDim(){ const b = document.getElementById('cdSave'); if(b) b.classList.toggle('dim', draftKey() === formOrig); }
+function updateSaveDim(){ const b = document.getElementById('cdSave'); if(b) b.classList.toggle('dim', draftKey() === formOrig); if(mestoFull) updateMestoBar(); }
 function updateDraft(field, value){ formDraft[field] = value; updateSaveDim(); }
 /* MODUL gboard-backspace v3 — v3 (Apoteka v56): polje za lozinku/ključ pokazuje tačkice umesto starog teksta.
    v2 — izvor: Zakazivanje guma v13 (probano na Zoranovom telefonu 26.10.2026: mikrofon iz prvog dodira,
@@ -2177,9 +2180,8 @@ function wireBackspace(el, prev){
   el.addEventListener('input', () => { if(pristineArmed.has(el) && el.value !== '') disarmField(el, false); });
 }
 function wireFormFields(){
-  const ids = ['fNaziv','fMesto'];
-  const els = ids.map(id=>document.getElementById(id));
-  els.forEach((el,i)=> wireBackspace(el, i>0 ? els[i-1] : null));
+  /* v3: „Gde se nalazi“ radi kao beležnica (tekst se uređuje na mestu, bez osenčenja i skoka nazad) — samo naziv je povezan */
+  wireBackspace(document.getElementById('fNaziv'), null);
 }
 function renderItemForm(){
   let b = document.getElementById('formBackdrop');
@@ -2199,8 +2201,10 @@ function renderItemForm(){
     '<div class="field">'+big+'<div id="cdStatus">'+cardStatusHtml()+'</div></div>'+
     '<div class="field cd-mesto"><div class="cd-lbl"><label for="fMesto">Gde se nalazi</label>'+
     (it && (it.updatedAt||it.createdAt) ? '<span class="cd-meta">Zabeleženo '+fmtDatum(it.updatedAt||it.createdAt)+'</span>' : '')+
-    '<button type="button" class="cd-done" onclick="collapseMesto()">Gotovo</button></div>'+
-    '<textarea id="fMesto" rows="3" '+TA+' onfocus="expandMesto()" onclick="expandMesto()" oninput="updateDraft(\'mesto\',this.value)" placeholder="npr. Spavaća soba, fioka noćnog ormarića, u plavoj fascikli">'+escapeHtml(formDraft.mesto)+'</textarea></div>'+
+    '<span class="cd-fullbar"><button type="button" class="cd-undo" id="mUndo" onclick="mestoUndo(-1)" aria-label="Poništi">↶</button>'+
+    '<button type="button" class="cd-undo" id="mRedo" onclick="mestoUndo(1)" aria-label="Ponovi">↷</button>'+
+    '<button type="button" class="cd-done" id="mSave" onclick="collapseMesto()">Sačuvaj</button></span></div>'+
+    '<textarea id="fMesto" rows="3" '+TA+' onfocus="expandMesto()" onclick="expandMesto()" oninput="mestoInput(this.value)" placeholder="npr. Spavaća soba, fioka noćnog ormarića, u plavoj fascikli">'+escapeHtml(formDraft.mesto)+'</textarea></div>'+
     '</div>'+
     '<div class="modal-actions ff-foot cd-foot">'+
     '<button class="home-sq" onclick="openCamera()"><span class="sq-box">📷</span>Slikaj</button>'+
@@ -2233,32 +2237,71 @@ function expandMesto(){
   if(mestoFull || !formDraft) return;
   const m = document.querySelector('#formBackdrop .form-full'); if(!m) return;
   mestoFull = true; m.classList.add('mesto-full');
+  mestoHist = mestoHist || { s:[formDraft.mesto], i:0 }; mestoFlush();
+  updateMestoBar();
   mestoCloseFn = ()=>{
+    mestoFlush();
     mestoFull = false; mestoCloseFn = null;
     const mm = document.querySelector('#formBackdrop .form-full'); if(mm) mm.classList.remove('mesto-full');
     const ta = document.getElementById('fMesto'); if(ta && document.activeElement === ta) ta.blur();
+    /* kao beležnica: izlaz (Sačuvaj ili „nazad“) čuva promenu, kartica ostaje otvorena */
+    if(formDraft && draftKey() !== formOrig) saveItemForm(true);
   };
   pushOverlay(mestoCloseFn);
+}
+/* ↶ ↷: korak = jedna pauza u kucanju/diktatu (0,8 s). Tekst se menja tek kad polje izgubi fokus (dodir na dugme zatvori
+   tastaturu) — dok Gboard radi, kod ne menja tekst u polju (modul gboard-backspace). */
+function mestoInput(v){
+  updateDraft('mesto', v);
+  if(!mestoHist) mestoHist = { s:[formOrigMesto()], i:0 };
+  clearTimeout(mestoTimer); mestoTimer = setTimeout(mestoFlush, 800);
+  updateMestoBar();
+}
+function formOrigMesto(){ try{ return JSON.parse(formOrig)[1] || ''; }catch(e){ return ''; } }
+function mestoFlush(){
+  clearTimeout(mestoTimer); mestoTimer = null;
+  if(!mestoHist || !formDraft) return;
+  const v = formDraft.mesto;
+  if(mestoHist.s[mestoHist.i] === v) return;
+  mestoHist.s = mestoHist.s.slice(0, mestoHist.i+1); mestoHist.s.push(v); mestoHist.i = mestoHist.s.length-1;
+  if(mestoHist.s.length > 100){ mestoHist.s.shift(); mestoHist.i--; }
+}
+function mestoUndo(d){
+  mestoFlush();
+  if(!mestoHist) return;
+  const j = mestoHist.i + d; if(j < 0 || j >= mestoHist.s.length) return;
+  const ta = document.getElementById('fMesto'); if(ta && document.activeElement === ta) ta.blur();
+  mestoHist.i = j; const v = mestoHist.s[j];
+  if(ta){ ta.value = v; try{ ta.setSelectionRange(v.length, v.length); }catch(e){} }
+  updateDraft('mesto', v); updateMestoBar();
+}
+function updateMestoBar(){
+  const u = document.getElementById('mUndo'), r = document.getElementById('mRedo'), sv = document.getElementById('mSave');
+  const pend = !!mestoTimer;
+  if(u) u.classList.toggle('dim', !mestoHist || (mestoHist.i <= 0 && !pend));
+  if(r) r.classList.toggle('dim', !mestoHist || pend || mestoHist.i >= mestoHist.s.length-1);
+  if(sv) sv.classList.toggle('dim', draftKey() === formOrig);
 }
 function collapseMesto(){ if(mestoCloseFn) closeOverlay(mestoCloseFn); }
 function refreshCardStatus(){ const el = document.getElementById('cdStatus'); if(el) el.innerHTML = cardStatusHtml(); }
 function closeItemForm(){
   if(formCloseFn){ closeOverlay(formCloseFn); formCloseFn = null; }
 }
-function saveItemForm(){
-  if(!formDraft.naziv || !formDraft.naziv.trim()){ showNote('Upiši naziv stvari gore u naslovu.', {warn:true}); const el=document.getElementById('fNaziv'); if(el) el.focus(); return; }
-  if(formEditId && draftKey() === formOrig){ closeItemForm(); return; }
+function saveItemForm(keepOpen){
+  keepOpen = keepOpen === true;
+  if(!formDraft.naziv || !formDraft.naziv.trim()){ showNote('Upiši naziv stvari gore u naslovu.', {warn:true}); const el=document.getElementById('fNaziv'); if(el && !keepOpen) el.focus(); return; }
+  if(formEditId && draftKey() === formOrig){ if(!keepOpen) closeItemForm(); return; }
   const editId = formEditId;
   if(!editId){
     const dup = findDuplicateItem(formDraft.naziv, editId);
     if(dup){
-      showDuplicateWarning(dup.naziv, ()=>{ doSaveItem(editId); });
+      showDuplicateWarning(dup.naziv, ()=>{ doSaveItem(editId, keepOpen); });
       return;
     }
   }
-  doSaveItem(editId);
+  doSaveItem(editId, keepOpen);
 }
-function doSaveItem(editId){
+function doSaveItem(editId, keepOpen){
   const now = new Date().toISOString();
   const f = { naziv: (formDraft.naziv||'').trim(), mesto: (formDraft.mesto||'').trim() };
   const pics = formDraft.slike.slice();
@@ -2279,8 +2322,8 @@ function doSaveItem(editId){
   const picsChanged = picSig(pics) !== picSig(SLIKE.get(id)) || pics.some((p,i)=> p !== (SLIKE.get(id)||[])[i]);
   const done = picsChanged ? Slike.postavi(id, pics) : Promise.resolve(true);
   render();
-  closeItemForm();
-  if(!editId) scrollAndHighlightItem(id);
+  if(keepOpen && formDraft){ formEditId = id; formOrig = draftKey(); renderItemForm(); }
+  else { closeItemForm(); if(!editId) scrollAndHighlightItem(id); }
   if(!saveFailActive()) showNote('Sačuvano: „'+f.naziv+'“'+(f.mesto ? ' — '+f.mesto : ''));
   if(picsChanged) done.then(ok=>{ render(); if(ok) opisSlikaRun(); });
 }
@@ -2808,7 +2851,7 @@ function openHelpScreen(){
   const sections = [
     { t:'Čemu služi', c:'Zapišeš gde si nešto ostavio ili spremio (pasoš, rezervni ključ, garanciju, zimske gume…), pa to kasnije brzo nađeš: naziv, gde se nalazi i slike.' },
     { t:'Unos glasom ili tekstom', c:'Polje dole na početnom ekranu: izgovori (mikrofon na tastaturi) ili ukucaj rečenicu, npr. „pasoš je u spavaćoj sobi, u fioci noćnog ormarića“, pa ➤. AI odvoji stvar i mesto, odmah sačuva i otvori karticu, gde odmah možeš da ispraviš ili dodaš slike. Ako stvar već postoji (premestio si je), samo joj se promeni mesto. Bez Gemini ključa ili kad AI ne uspe, rečenica se sačuva kao naziv, pa je ispraviš u kartici.' },
-    { t:'Kartica stvari', c:'Dodir na stvar (ili „Dodaj“ gore) otvara karticu: naziv je u naslovu (dodir na njega ga menja), ispod je velika profilna slika i polje „Gde se nalazi“ sa datumom unosa. Dodir na to polje ga širi preko celog ekrana da lakše pišeš i čitaš; „nazad“ ili Gotovo vraća karticu. Dole su Slikaj, Galerija, Obriši, Otkaži i Sačuvaj. Sačuvaj je bled dok ništa ne promeniš.' },
+    { t:'Kartica stvari', c:'Dodir na stvar (ili „Dodaj“ gore) otvara karticu: naziv je u naslovu (dodir na njega ga menja), ispod je velika profilna slika i polje „Gde se nalazi“ sa datumom unosa. Dodir na to polje ga širi preko celog ekrana, kao beležnica: tekst menjaš na mestu, ↶ ↷ poništavaju i vraćaju korake (tastatura se tada skloni, dodirni tekst za dalje pisanje). Sačuvaj gore ili „nazad“ čuva promenu i vraća karticu. Dole su Slikaj, Galerija, Obriši, Otkaži i Sačuvaj. Sačuvaj je bled dok ništa ne promeniš.' },
     { t:'Slike', c:'Slikaj otvara kameru u aplikaciji: slikaj koliko treba (gore piše „Slikano: N“), pa Gotovo — sve slike idu u karticu. Galerija: izaberi više slika odjednom. Slike se čuvaju cele (bez isecanja), umanjene da ne zauzimaju previše mesta. Prvi put Chrome traži dozvolu za kameru; bez nje se otvara obična kamera telefona.' },
     { t:'Profilna slika', c:'Dodir na veliku sliku otvara sve slike preko celog ekrana; prevlačenjem ih listaš. „★ Postavi kao profilnu“ bira tu sliku za veliku; 🗑 briše sliku. Dodir na samu sliku vraća nazad bez promene. Sve postaje konačno tek kad pritisneš Sačuvaj.' },
     { t:'Šta je na slikama', c:'Posle čuvanja slika AI ih u pozadini pogleda i zapiše kratak opis (ispod velike slike: „Na slikama: …“). Pretraga posle nalazi i te reči — npr. „šrafciger“ u kutiji sa alatom. Nov opis se pravi samo kad promeniš slike; bez interneta se napravi kasnije.' },
