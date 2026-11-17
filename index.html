@@ -616,7 +616,7 @@ body.searching #entryBar{ display:none; }
 /* v6 (Zoran 17.11.): fascikle (čipovi gore) i označavanje više stvari (dugi pritisak) kao u Beleškama */
 .fold-bar{ display:flex; align-items:center; gap:8px; margin:0 0 12px; }
 .fold-bar > .fold-chip{ position:relative; z-index:1; }   /* v7: „Sve“ stoji, ostale fascikle se listaju */
-.fold-row{ flex:1; min-width:0; display:flex; gap:8px; overflow-x:auto; padding:1px 0 2px; scrollbar-width:none; -webkit-mask-image:linear-gradient(90deg, transparent 0, #000 10px, #000 calc(100% - 18px), transparent 100%); mask-image:linear-gradient(90deg, transparent 0, #000 10px, #000 calc(100% - 18px), transparent 100%); padding-left:4px; }
+.fold-row{ position:relative; flex:1; min-width:0; display:flex; gap:8px; overflow-x:auto; padding:1px 0 2px; scrollbar-width:none; -webkit-mask-image:linear-gradient(90deg, transparent 0, #000 10px, #000 calc(100% - 18px), transparent 100%); mask-image:linear-gradient(90deg, transparent 0, #000 10px, #000 calc(100% - 18px), transparent 100%); padding-left:4px; }
 .fold-search{ display:flex; align-items:center; gap:8px; border:1px solid var(--line); border-radius:12px; padding:0 12px; margin:2px 0 6px; background:var(--bg-elevated); color:var(--text-dim); }
 .fold-search input{ flex:1; min-width:0; border:none; background:transparent; color:var(--text); font-size:15.5px; font-family:inherit; padding:11px 0; outline:none; }
 .fold-search input, .fold-search input:focus{ border:none !important; outline:none !important; box-shadow:none !important; background:transparent !important; }
@@ -630,7 +630,9 @@ body.searching #entryBar{ display:none; }
 .fo-hint{ font-size:13px; color:var(--text-dim); margin:2px 4px 8px; }
 .fold-row::-webkit-scrollbar{ display:none; }
 .fold-chip{ flex:none; height:38px; padding:0 16px; border-radius:999px; border:1px solid var(--line); background:transparent; color:var(--text); font-size:14.5px; font-weight:600; font-family:inherit; cursor:pointer; white-space:nowrap; max-width:220px; overflow:hidden; text-overflow:ellipsis; -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; }
-.fold-chip.on{ background:var(--bg-elevated); border-color:var(--frame-acc); color:var(--frame-acc); }
+.fold-chip.on{ background:var(--green-deep); border-color:var(--green-deep); color:var(--on-accent); font-weight:700; }   /* v8: izabrana = puna boja kao „Dodaj“ */
+/* v8: dug pritisak na stvar ne označava tekst (Chrome-ov meni Kopiraj/Prevedi) */
+.list-area .med-card, .list-area .grid-card, .fold-chip{ -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; }
 .fold-chip.add{ color:var(--text-dim); font-size:20px; font-weight:400; padding:0 14px; }
 .sel-head{ display:flex; align-items:center; gap:10px; margin:0 0 12px; }
 .sel-title{ flex:1; min-width:0; font-size:22px; font-weight:700; color:var(--text); }
@@ -1235,7 +1237,7 @@ function foldChipsHtml(){
     folders.map(f=>'<button class="fold-chip'+(cur===f.id?' on':'')+'" onclick="foldChipTap(\''+f.id+'\')" onpointerdown="foldPressStart(\''+f.id+'\')" onpointerup="foldPressEnd()" onpointerleave="foldPressEnd()" onpointercancel="foldPressEnd()" oncontextmenu="return false">'+escapeHtml(f.naziv)+'</button>').join('')+
     '</div>' : '')+'</div>';
 }
-let foldTimer = null, foldFired = false;
+let foldTimer = null, foldFired = false, foldScroll = 0;
 /* posle dugog pritiska stiže i „click“ kad se prst podigne — pao bi na tek otvoren meni (pozadinu) i zatvorio ga */
 function swallowNextClick(){
   const f = (e)=>{ e.stopPropagation(); e.preventDefault(); done(); };
@@ -1423,6 +1425,7 @@ function startCardLongPress(id){
   cardLongPressTimer = setTimeout(()=>{
     cardLongPressFired = true;
     if(navigator.vibrate) navigator.vibrate(30);
+    try{ const sl = window.getSelection(); if(sl) sl.removeAllRanges(); }catch(e){}
     enterSel(id);   /* v6: dugi pritisak = označavanje (umesto brzog menija) */
   }, 500);
 }
@@ -1530,7 +1533,7 @@ function render(){
     if(settings.sortMode==='mesto') return (it.mesto && it.mesto.trim()) || 'Bez mesta';
     return null;
   }
-  const press = (it)=>' onclick="handleCardClick(\''+it.id+'\')" onpointerdown="startCardLongPress(\''+it.id+'\')" onpointerup="cancelCardLongPress()" onpointerleave="cancelCardLongPress()" onpointercancel="cancelCardLongPress()"';
+  const press = (it)=>' oncontextmenu="return false" onclick="handleCardClick(\''+it.id+'\')" onpointerdown="startCardLongPress(\''+it.id+'\')" onpointerup="cancelCardLongPress()" onpointerleave="cancelCardLongPress()" onpointercancel="cancelCardLongPress()"';
   if(filtered.length===0){
     listHtml = '<div class="empty">'+(qWords.length ? 'Nema stvari koje odgovaraju pretrazi "'+escapeHtml(searchQuery)+'".' : cf && items.length ? 'U ovoj fascikli još nema stvari.<br>Nova stvar dodata ovde ide u nju; postojeće dodaš dugim pritiskom → „Premesti u“.' : 'Još nema zabeleženih stvari.<br>Izgovori ili ukucaj dole šta je i gde je, ili dodirni „Dodaj“ gore.')+'</div>';
   } else if(settings.viewMode==='mreza'){
@@ -1577,8 +1580,16 @@ function render(){
   _swOpen = null;
   if(settings.viewMode!=='mreza' && !selSet) app.querySelectorAll('.list-area > .med-card').forEach(c=>swipeToDelete(c, c.id.slice(5)));
   renderSelBar();
+  /* v8: red fascikli zadržava gde je bio, a izabrana se pomeri tako da se CELA vidi (ne ispod bledih ivica) */
   const fr = document.getElementById('foldRow'), on = fr && fr.querySelector('.fold-chip.on');
-  if(on && fr) fr.scrollLeft = Math.max(0, on.offsetLeft - 16);
+  if(fr){
+    fr.scrollLeft = foldScroll;
+    if(on){ const l = on.offsetLeft, r = l + on.offsetWidth, w = fr.clientWidth;
+      if(l - 14 < fr.scrollLeft) fr.scrollLeft = Math.max(0, l - 14);
+      else if(r + 24 > fr.scrollLeft + w) fr.scrollLeft = r + 24 - w; }
+    foldScroll = fr.scrollLeft;
+    fr.addEventListener('scroll', ()=>{ foldScroll = fr.scrollLeft; }, {passive:true});
+  }
 
   if(searchOpen){
     setTimeout(()=>{ const el=document.getElementById('searchInput'); if(el) el.focus(); }, 30);
@@ -1666,7 +1677,7 @@ function confirmDeleteItem(id, swapFromFn){
 }
 
 /* ---------- ADD / EDIT FORM (draft-based, da ne izgubi unos pri osvezavanju zbog fotografije) ---------- */
-const APP_VERSION = 7; /* svaka objava: +1, isti broj u linku ?v=N i u keš imenu sw.js */
+const APP_VERSION = 8; /* svaka objava: +1, isti broj u linku ?v=N i u keš imenu sw.js */
 /* MODUL ai-dnevnik v1 — izvor: Arhiva v174 (Podešavanja → AI obrada: trošak i poslednje obrade, probano 20.10.2026.)
 Upotreba (uz modul gemini v2):
   const log = [], t0 = Date.now();
