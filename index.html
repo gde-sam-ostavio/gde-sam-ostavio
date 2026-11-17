@@ -635,7 +635,10 @@ body.searching #entryBar{ display:none; }
 .list-area .med-card, .list-area .grid-card, .fold-chip{ -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; }
 .fold-chip.add{ color:var(--text-dim); font-size:20px; font-weight:400; padding:0 14px; }
 .sel-head{ display:flex; align-items:center; gap:10px; margin:0 0 12px; }
-.sel-title{ flex:1; min-width:0; font-size:22px; font-weight:700; color:var(--text); }
+.sel-title{ flex:1; min-width:0; font-size:22px; font-weight:700; color:var(--text); white-space:nowrap; }
+/* v8: „Izaberi sve“ sa natpisom (sama ikonica se nije prepoznavala) */
+.sel-all{ flex:none; display:flex; align-items:center; gap:7px; height:42px; padding:0 14px 0 11px; border-radius:999px; border:1px solid var(--frame-acc); background:transparent; color:var(--frame-acc); font-size:14.5px; font-weight:700; font-family:inherit; cursor:pointer; }
+.sel-all svg{ width:21px; height:21px; }
 .sel-dot{ flex:none; width:26px; height:26px; border-radius:50%; border:2px solid var(--text-dim); margin-left:auto; display:flex; align-items:center; justify-content:center; color:var(--on-accent, #000); font-size:15px; font-weight:800; }
 .is-sel .sel-dot{ background:var(--frame-acc); border-color:var(--frame-acc); }
 .is-sel .sel-dot::after{ content:'✓'; }
@@ -1560,7 +1563,7 @@ function render(){
     '<div class="topbar">'+
     backupReminderHtml()+
     (selSet ? '<div class="sel-head"><button class="icon-btn" onclick="exitSel()" aria-label="Završi označavanje">'+SEL_IC.x+'</button>'+
-      '<div class="sel-title">Izabrano: '+selSet.size+'</div><button class="icon-btn" onclick="selAll()" aria-label="Izaberi sve">'+SEL_IC.all+'</button></div>' : '')+
+      '<div class="sel-title">Izabrano: '+selSet.size+'</div><button class="sel-all" onclick="selAll()">'+SEL_IC.all+(filtered.length && filtered.every(it=>selSet.has(it.id)) ? 'Poništi izbor' : 'Izaberi sve')+'</button></div>' : '')+
     '<div class="home-head"'+(selSet?' style="display:none"':'')+'><span class="home-mark">'+HOME_IC.mark+'</span>'+
     '<div class="home-tt"><div class="app-title serif">Gde sam ostavio</div><div class="home-count">'+(cf && !qWords.length ? escapeHtml(getFolder(cf).naziv) : 'Sve stvari')+' ('+filtered.length+')</div></div>'+
     '<button class="icon-btn" onclick="toggleViewMode()" title="Promeni prikaz">'+(settings.viewMode==='mreza'?ic('☰','list'):ic('▦','grid'))+'</button>'+
@@ -3209,7 +3212,7 @@ function openHelpScreen(){
     { t:'AI ćaskanje', c:'Dugme „AI“: pitaj „Gde je pasoš?“ ili „Šta držim u garaži?“. AI može i da predloži izmenu (npr. novo mesto) ili brisanje, ali ništa se ne menja dok sam ne potvrdiš.' },
     { t:'Prikaz', c:'Ikonica ▦/☰ menja prikaz između liste i mreže.' },
     { t:'Fascikle', c:'Ispod dugmadi su fascikle: „Sve“ (uvek levo) prikazuje sve stvari, dodir na fasciklu samo njene; ostale fascikle listaš prstom. Novu praviš dugmetom „Fascikla“ gore. Nova stvar (dole glasom, „Dodaj“ ili AI) ide u fasciklu koja je otvorena. Dug pritisak na fasciklu: Preimenuj, Promeni redosled (drži ≡ i prevuci) ili Obriši fasciklu (stvari iz nje ostaju, samo bez fascikle). Pretraga uvek traži po svim fasciklama.' },
-    { t:'Označavanje više stvari', c:'Dug pritisak na stvar je označi; dodirom označavaš još. Gore: ✕ završava (i „nazad“), ikonica desno označi sve. Dole: Zakači/Otkači (na vrh spiska), Premesti u (fasciklu — lupa gore je brzo nađe — ili nova fascikla) i Izbriši (u korpu).' },
+    { t:'Označavanje više stvari', c:'Dug pritisak na stvar je označi; dodirom označavaš još. Gore: ✕ završava (i „nazad“), „Izaberi sve“ desno označi sve (ponovo: „Poništi izbor“). Dole: Zakači/Otkači (na vrh spiska), Premesti u (fasciklu — lupa gore je brzo nađe — ili nova fascikla) i Izbriši (u korpu).' },
     { t:'Izmena podataka', c:'Dodir na polje: stari tekst se vidi osenčen, a kucanjem ili glasom upisuješ novo. Drugi dodir vraća stari tekst za izmenu dela. Taster za brisanje u praznom polju vraća na prethodno polje.' },
     { t:'Brisanje i korpa', c:'Povuci stvar ulevo → crveno dugme „Izbriši“, ili Obriši dole u kartici, ili više njih odjednom: dug pritisak → označi → Izbriši. Obrisano ide u korpu (Podešavanja → Korpa) i čeka zadati broj dana (podrazumevano 30), pa se samo trajno briše. U korpi izabereš stvari, pa „Vrati“ (sa svim podacima i slikama) ili „Obriši trajno“.' },
     { t:'Obaveštenja', c:'Poruke se pojavljuju gore: zeleno kad je nešto urađeno, crveno kad nije uspelo. Nestanu same.' },
