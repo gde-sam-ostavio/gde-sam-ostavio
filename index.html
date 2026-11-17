@@ -613,6 +613,27 @@ input::selection, textarea::selection{ background:color-mix(in srgb, var(--frame
 .entry-input-wrap textarea::placeholder{ color:var(--text-dim); font-size:13.5px; }
 body.has-entry .list-area{ padding-bottom:150px; }
 body.searching #entryBar{ display:none; }
+/* v6 (Zoran 17.11.): fascikle (čipovi gore) i označavanje više stvari (dugi pritisak) kao u Beleškama */
+.fold-row{ display:flex; gap:8px; overflow-x:auto; margin:0 0 12px; padding:1px 0 2px; scrollbar-width:none; }
+.fold-row::-webkit-scrollbar{ display:none; }
+.fold-chip{ flex:none; height:38px; padding:0 16px; border-radius:999px; border:1px solid var(--line); background:transparent; color:var(--text); font-size:14.5px; font-weight:600; font-family:inherit; cursor:pointer; white-space:nowrap; max-width:220px; overflow:hidden; text-overflow:ellipsis; -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; }
+.fold-chip.on{ background:var(--bg-elevated); border-color:var(--frame-acc); color:var(--frame-acc); }
+.fold-chip.add{ color:var(--text-dim); font-size:20px; font-weight:400; padding:0 14px; }
+.sel-head{ display:flex; align-items:center; gap:10px; margin:0 0 12px; }
+.sel-title{ flex:1; min-width:0; font-size:22px; font-weight:700; color:var(--text); }
+.sel-dot{ flex:none; width:26px; height:26px; border-radius:50%; border:2px solid var(--text-dim); margin-left:auto; display:flex; align-items:center; justify-content:center; color:var(--on-accent, #000); font-size:15px; font-weight:800; }
+.is-sel .sel-dot{ background:var(--frame-acc); border-color:var(--frame-acc); }
+.is-sel .sel-dot::after{ content:'✓'; }
+.list-area .med-card.is-sel, .grid-card.is-sel{ background:var(--bg-elevated); border-color:var(--frame-acc); }
+.grid-card .sel-dot{ position:absolute; top:8px; right:8px; margin:0; background:var(--bg-card); }
+.grid-card.is-sel .sel-dot{ background:var(--frame-acc); }
+body.selecting #entryBar{ display:none; }
+body.selecting .list-area{ padding-bottom:110px; }
+#selBar{ position:fixed; left:0; right:0; bottom:0; max-width:520px; margin:0 auto; z-index:40; display:grid; grid-template-columns:repeat(3,1fr); background:var(--bg); border-top:1px solid var(--line); padding:8px 6px calc(10px + env(safe-area-inset-bottom)); }
+#selBar button{ border:none; background:none; color:var(--text); font-family:inherit; font-size:13.5px; font-weight:600; display:flex; flex-direction:column; align-items:center; gap:5px; padding:6px 2px; cursor:pointer; }
+#selBar button svg{ width:26px; height:26px; }
+#selBar button.del{ color:var(--coral); }
+#selBar button:disabled{ opacity:.35; }
 .cd-ttl{ flex:1; min-width:0; display:flex; align-items:center; gap:6px; }
 .cd-ttl input{ flex:0 1 auto; field-sizing:content; min-width:4ch; max-width:100%; border:none; background:transparent; color:var(--text); font-family:var(--font-title, inherit); font-size:18px; font-weight:600; padding:4px 0; outline:none; }
 .cd-ttl input::placeholder{ color:var(--text-dim); }
@@ -836,7 +857,7 @@ function persistChecked(key, val){ if(!lsSet(key, val)){ warnSaveFailed(); retur
 function buildBackup(){
   /* slike su u IndexedDB-u (SLIKE), u kopiju idu uz svoju stvar */
   const withPics = items.map(it=> SLIKE.has(it.id) ? Object.assign({}, it, { slike: SLIKE.get(it.id).slice() }) : it);
-  return { version:1, app:'gde-sam-ostavio', exportedAt: new Date().toISOString(), items: withPics, settings: settings, backupIntervalDays: getBackupIntervalDays() };
+  return { version:1, app:'gde-sam-ostavio', exportedAt: new Date().toISOString(), items: withPics, folders: folders, settings: settings, backupIntervalDays: getBackupIntervalDays() };
 }
 /* v54 (uzor Troškovi v34/v37): „Podeli kopiju“ — Androidov meni za deljenje (Google Drive, mejl…). Chrome ne deli .json
    (izvorni kod Chromium-a, chrome/browser/webshare/share_service_impl.cc), .txt/text/plain da → isti JSON u fajlu .txt.
@@ -928,6 +949,9 @@ function applyBackup(backup){
     delete c.slika; delete c.slike;
     return migrateItem(c);
   });
+  folders = Array.isArray(backup.folders) ? backup.folders.filter(f=>f && f.id && f.naziv) : [];   /* v6 */
+  items.forEach(it=>{ if(it.folder && !getFolder(it.folder)) delete it.folder; });
+  persistFolders();
   persistItems();
   const keep = new Set(items.map(i=>i.id).concat(getTrash().map(x=>x.id)));
   SLIKE.forEach((v,k)=>{ if(!keep.has(k)) Slike.postavi(k, null); });
@@ -1135,16 +1159,25 @@ window.addEventListener('resize', updatePopTop);
 /* ---------- OVERLAY STACK (da dugme/gest "nazad" zatvara prozorčić umesto da napusti stranicu) ---------- */
 let overlayStack = [];
 let suppressPopstateCount = 0;
+/* v6: koraci „nazad“ iz koda se skupljaju i izvrše JEDNOM na kraju istog posla (history.go(-n)). Zatvori-pa-otvori u istom
+   dodiru (meni → prozor, prozor → kraj označavanja) tako ponovo koristi isti korak istorije umesto da ga izgubi:
+   history.back() je asinhron, pa bi inače izbrisao korak koji je novi prozor upravo dodao (i sledeće „nazad“ izašlo iz aplikacije). */
+let _backN = 0;
 function pushOverlay(removeFn){
   overlayStack.push(removeFn);
+  if(_backN > 0){ _backN--; return; }   /* korak koji je trebalo vratiti ostaje novom prozoru */
   try{ history.pushState({ovl:true}, '', location.href); }catch(e){}
 }
 function closeOverlay(removeFn){
   const idx = overlayStack.lastIndexOf(removeFn);
   if(idx!==-1) overlayStack.splice(idx,1);
   removeFn();
-  suppressPopstateCount++;
-  try{ history.back(); }catch(e){ suppressPopstateCount--; }
+  _backN++;
+  if(_backN === 1) queueMicrotask(()=>{
+    const n = _backN; _backN = 0; if(!n) return;
+    suppressPopstateCount++;
+    try{ history.go(-n); }catch(e){ suppressPopstateCount--; }
+  });
 }
 function swapOverlay(oldRemoveFn, newRemoveFn){
   // zamenjuje jedan otvoren prozorcic drugim na ISTOM nivou, bez diranja istorije uopste -
@@ -1166,17 +1199,168 @@ window.addEventListener('popstate', function(){
 
 
 function getItem(id){ return items.find(i=>i.id===id); }
+/* ---------- v6: FASCIKLE ---------- */
+let folders = [];   /* [{id, naziv}] — gso:folders; stvar ima it.folder (id) ili ništa */
+function loadFolders(){ const v = lsGet('gso:folders'); try{ folders = v && v.value ? JSON.parse(v.value) : []; }catch(e){ folders = []; } if(!Array.isArray(folders)) folders = []; }
+function persistFolders(){ return persistChecked('gso:folders', JSON.stringify(folders)); }
+function getFolder(id){ return folders.find(f=>f.id===id); }
+function curFolder(){ const f = settings.folder && getFolder(settings.folder); return f ? f.id : ''; }
+function setFolder(id){ settings.folder = id || ''; persistSettings(); exitSel(); render(); window.scrollTo(0,0); }
+const SEL_IC = {
+  x: HI('<path d="M6 6l12 12M18 6L6 18"/>',24),
+  all: HI('<path d="M4 6.5l1.8 1.8L9 5M4 12.5l1.8 1.8L9 11M4 18.5l1.8 1.8L9 17M12 7h8M12 13h8M12 19h8"/>',24),
+  pin: HI('<path d="M9 3h6l-1 6 3 3v2H7v-2l3-3z"/><path d="M12 14v7"/>',26),
+  unpin: HI('<path d="M9 3h6l-1 6 3 3v2H7v-2l3-3z"/><path d="M12 14v7M4 4l16 16"/>',26),
+  move: HI('<path d="M3.5 6.5a2 2 0 0 1 2-2h4l2 2h7a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z"/><path d="M11 13h7M15.5 10.5L18 13l-2.5 2.5"/>',26),
+  del: HI('<path d="M4.5 7h15M10 7V4.5h4V7M6.5 7l1 13h9l1-13M10 11v6M14 11v6"/>',26)
+};
+function foldChipsHtml(){
+  const cur = curFolder();
+  return '<div class="fold-row" id="foldRow">'+
+    '<button class="fold-chip'+(cur?'':' on')+'" onclick="setFolder(\'\')">Sve</button>'+
+    folders.map(f=>'<button class="fold-chip'+(cur===f.id?' on':'')+'" onclick="foldChipTap(\''+f.id+'\')" onpointerdown="foldPressStart(\''+f.id+'\')" onpointerup="foldPressEnd()" onpointerleave="foldPressEnd()" onpointercancel="foldPressEnd()" oncontextmenu="return false">'+escapeHtml(f.naziv)+'</button>').join('')+
+    '<button class="fold-chip add" onclick="newFolderPrompt(true)" aria-label="Nova fascikla">+</button></div>';
+}
+let foldTimer = null, foldFired = false;
+/* posle dugog pritiska stiže i „click“ kad se prst podigne — pao bi na tek otvoren meni (pozadinu) i zatvorio ga */
+function swallowNextClick(){
+  const f = (e)=>{ e.stopPropagation(); e.preventDefault(); done(); };
+  const done = ()=>{ document.removeEventListener('click', f, true); clearTimeout(tm); };
+  const tm = setTimeout(done, 1200);
+  document.addEventListener('click', f, true);
+}
+function foldPressStart(id){ foldFired = false; clearTimeout(foldTimer); foldTimer = setTimeout(()=>{ foldFired = true; if(navigator.vibrate) navigator.vibrate(30); swallowNextClick(); openFolderMenu(id); }, 500); }
+function foldPressEnd(){ clearTimeout(foldTimer); }
+function foldChipTap(id){ if(foldFired){ foldFired = false; return; } setFolder(id); }
+function openFolderMenu(id){
+  const f = getFolder(id); if(!f) return;
+  openHomeSheet(sheetHead(escapeHtml(f.naziv))+
+    '<button class="hs-row" onclick="closeHomeSheet(); renameFolderPrompt(\''+id+'\')"><span>Preimenuj</span></button>'+
+    '<button class="hs-row" style="color:var(--coral)" onclick="closeHomeSheet(); deleteFolder(\''+id+'\')"><span>Obriši fasciklu</span></button>');
+}
+/* prozor sa jednim poljem (naziv fascikle) */
+let namePromptFn = null;
+function namePrompt(title, init, onOk){
+  const b = document.createElement('div'); b.className = 'modal-backdrop small-modal'; b.id = 'namePrompt';
+  b.innerHTML = '<div class="modal" style="border-radius:20px;"><h2 class="serif" style="font-size:17px; margin-bottom:12px;">'+escapeHtml(title)+'</h2>'+
+    '<div class="field"><input id="npInput" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="done" placeholder="Naziv fascikle" value="'+escapeHtml(init||'')+'"></div>'+
+    '<div class="modal-actions"><button class="cancel-btn" onclick="closeNamePrompt()">Otkaži</button><button class="save-btn" id="npOk">Sačuvaj</button></div></div>';
+  document.body.appendChild(b);
+  const inp = document.getElementById('npInput');
+  const ok = ()=>{ const v = inp.value.trim(); if(!v){ inp.focus(); return; } closeNamePrompt(); onOk(v); };
+  document.getElementById('npOk').onclick = ok;
+  inp.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); ok(); } });
+  b.addEventListener('click', e=>{ if(e.target===b) closeNamePrompt(); });
+  namePromptFn = ()=>{ const x = document.getElementById('namePrompt'); if(x) x.remove(); namePromptFn = null; };
+  pushOverlay(namePromptFn);
+  setTimeout(()=>{ inp.focus(); try{ inp.setSelectionRange(inp.value.length, inp.value.length); }catch(e){} }, 60);
+}
+function closeNamePrompt(){ if(namePromptFn) closeOverlay(namePromptFn); }
+function folderNameTaken(v, exceptId){ const k = foldAll(v); return folders.some(f=>f.id!==exceptId && foldAll(f.naziv)===k); }
+function newFolderPrompt(open, then){
+  namePrompt('Nova fascikla', '', (v)=>{
+    if(folderNameTaken(v)){ showBanner('Fascikla „'+v+'“ već postoji.'); return; }
+    const f = { id: uid('f'), naziv: v };
+    folders.push(f);
+    if(!persistFolders()){ folders = folders.filter(x=>x.id!==f.id); return; }
+    if(then) then(f.id); else if(open) setFolder(f.id); else render();
+    if(!then) showNote('Napravljena fascikla „'+v+'“.');
+  });
+}
+function renameFolderPrompt(id){
+  const f = getFolder(id); if(!f) return;
+  namePrompt('Preimenuj fasciklu', f.naziv, (v)=>{
+    if(folderNameTaken(v, id)){ showBanner('Fascikla „'+v+'“ već postoji.'); return; }
+    const old = f.naziv; f.naziv = v;
+    if(!persistFolders()){ f.naziv = old; return; }
+    render(); showNote('Fascikla je preimenovana u „'+v+'“.');
+  });
+}
+function deleteFolder(id){
+  const f = getFolder(id); if(!f) return;
+  const n = items.filter(it=>it.folder===id).length;
+  showConfirm('Obrisati fasciklu „'+f.naziv+'“?'+(n ? ' Stvari iz nje ('+n+') ostaju, samo bez fascikle (vide se u „Sve“).' : ''), ()=>{
+    const before = items.map(it=>it.folder);
+    items.forEach(it=>{ if(it.folder===id) delete it.folder; });
+    if(!persistItems()){ items.forEach((it,i)=>{ if(before[i]) it.folder = before[i]; }); return; }
+    folders = folders.filter(x=>x.id!==id); persistFolders();
+    if(settings.folder===id){ settings.folder = ''; persistSettings(); }
+    render(); showNote('Fascikla „'+f.naziv+'“ je obrisana.');
+  }, 'Da, obriši');
+}
+/* ---------- v6: OZNAČAVANJE VIŠE STVARI (dugi pritisak) ---------- */
+let selSet = null, selCloseFn = null;
+function enterSel(id){
+  if(selSet){ toggleSel(id); return; }
+  selSet = new Set([id]);
+  selCloseFn = ()=>{ selSet = null; selCloseFn = null; const b = document.getElementById('selBar'); if(b) b.remove(); document.body.classList.remove('selecting'); render(); };
+  pushOverlay(selCloseFn);
+  document.body.classList.add('selecting');
+  render();
+}
+function exitSel(){ if(selCloseFn) closeOverlay(selCloseFn); }
+function toggleSel(id){ if(!selSet) return; if(selSet.has(id)) selSet.delete(id); else selSet.add(id); render(); }
+function selVisibleIds(){ return [...document.querySelectorAll('.list-area [data-sid]')].map(e=>e.dataset.sid); }
+function selAll(){ if(!selSet) return; const ids = selVisibleIds(); selSet = ids.every(i=>selSet.has(i)) ? new Set() : new Set(ids); render(); }
+function selItems(){ return selSet ? items.filter(it=>selSet.has(it.id)) : []; }
+function renderSelBar(){
+  let b = document.getElementById('selBar');
+  if(!selSet){ if(b) b.remove(); return; }
+  if(!b){ b = document.createElement('div'); b.id = 'selBar'; document.body.appendChild(b); }
+  const its = selItems(), none = !its.length, allPinned = !none && its.every(it=>it.pinned);
+  b.innerHTML = '<button onclick="selPin()"'+(none?' disabled':'')+'>'+(allPinned ? SEL_IC.unpin+'Otkači' : SEL_IC.pin+'Zakači')+'</button>'+
+    '<button onclick="selMoveSheet()"'+(none?' disabled':'')+'>'+SEL_IC.move+'Premesti u</button>'+
+    '<button class="del" onclick="selDelete()"'+(none?' disabled':'')+'>'+SEL_IC.del+'Izbriši</button>';
+}
+function selPin(){
+  const its = selItems(); if(!its.length) return;
+  const to = !its.every(it=>it.pinned), old = its.map(it=>it.pinned);
+  its.forEach(it=>{ it.pinned = to; });
+  if(!persistItems()){ its.forEach((it,i)=>{ it.pinned = old[i]; }); return; }
+  exitSel(); showNote((to ? 'Zakačeno na vrh: ' : 'Otkačeno: ')+its.length+' '+stvarRec(its.length)+'.');
+}
+function selMoveSheet(){
+  const its = selItems(); if(!its.length) return;
+  const all = (fid)=> its.every(it=>(it.folder||'')===fid);
+  openHomeSheet(sheetHead('Premesti u')+
+    '<button class="hs-row" onclick="selMoveTo(\'\')"><span>Bez fascikle</span>'+(all('')?'<span class="hs-check">✓</span>':'')+'</button>'+
+    folders.map(f=>'<button class="hs-row" onclick="selMoveTo(\''+f.id+'\')"><span>'+escapeHtml(f.naziv)+'</span>'+(all(f.id)?'<span class="hs-check">✓</span>':'')+'</button>').join('')+
+    '<button class="hs-row" style="color:var(--frame-acc)" onclick="selMoveNew()"><span>+ Nova fascikla</span></button>');
+}
+function selMoveNew(){ closeHomeSheet(); newFolderPrompt(false, (fid)=>selMoveTo(fid)); }
+function selMoveTo(fid){
+  if(document.getElementById('homeSheet')) closeHomeSheet();
+  const its = selItems(); if(!its.length) return;
+  const old = its.map(it=>it.folder);
+  its.forEach(it=>{ if(fid) it.folder = fid; else delete it.folder; });
+  if(!persistItems()){ its.forEach((it,i)=>{ if(old[i]) it.folder = old[i]; else delete it.folder; }); return; }
+  const f = getFolder(fid);
+  exitSel(); showNote((f ? 'Premešteno u „'+f.naziv+'“: ' : 'Bez fascikle: ')+its.length+' '+stvarRec(its.length)+'.');
+}
+function selDelete(){
+  const its = selItems(); if(!its.length) return;
+  showConfirm(its.length===1 ? 'Obrisati „'+its[0].naziv+'“? Ide u korpu, odakle može da se vrati.' : 'Obrisati izabrano ('+its.length+')? Ide u korpu, odakle može da se vrati.', ()=>{
+    const done = [];
+    for(const it of its){ if(!trashAdd(it)){ showBanner('Brisanje nije uspelo: na telefonu nema mesta za korpu. Isprazni korpu u Podešavanjima pa probaj ponovo.'); break; } done.push(it.id); }
+    if(!done.length) return;
+    items = items.filter(i=>!done.includes(i.id));
+    persistItems();
+    exitSel();
+    showBanner(done.length===1 ? '„'+its[0].naziv+'“ je u korpi.' : 'U korpi: '+done.length+' '+stvarRec(done.length)+'.', 'info');
+  }, 'Da, obriši');
+}
 
 /* ---------- DUGI PRITISAK NA KARTICU -> BRZI MENI ---------- */
 let cardLongPressTimer = null;
 let cardLongPressFired = false;
 function startCardLongPress(id){
   cardLongPressFired = false;
+  if(selSet) return;
   clearTimeout(cardLongPressTimer);
   cardLongPressTimer = setTimeout(()=>{
     cardLongPressFired = true;
     if(navigator.vibrate) navigator.vibrate(30);
-    openCardQuickMenu(id);
+    enterSel(id);   /* v6: dugi pritisak = označavanje (umesto brzog menija) */
   }, 500);
 }
 function cancelCardLongPress(){ clearTimeout(cardLongPressTimer); }
@@ -1241,41 +1425,8 @@ document.addEventListener('pointerdown', (e)=>{
 }, true);
 function handleCardClick(id){
   if(cardLongPressFired){ cardLongPressFired = false; return; }
+  if(selSet){ toggleSel(id); return; }
   openItemForm(id);
-}
-let cardMenuCloseFn = null;
-function openCardQuickMenu(id){
-  const it = getItem(id);
-  if(!it) return;
-  const b = document.createElement('div'); b.className='modal-backdrop small-modal'; b.id='cardMenuBackdrop';
-  b.innerHTML = '<div class="modal" style="border-radius:20px;">'+
-    '<button class="modal-close-x" onclick="closeCardQuickMenu()">✕</button>'+
-    '<h2 class="serif" style="font-size:16px; padding-right:30px;">'+escapeHtml(displayNaziv(it.naziv))+'</h2>'+
-    '<div style="display:flex; flex-direction:column; gap:9px; margin-top:4px;">'+
-    '<button class="cancel-btn" style="text-align:left; padding:13px 14px; border-radius:12px; font-weight:700; font-size:14px;" onclick="quickTogglePin(\''+it.id+'\')">'+(it.pinned ? '📌 Otkači sa vrha' : '📌 Zakači na vrh')+'</button>'+
-    '<button class="delete-btn" style="text-align:left; padding:13px 14px; border-radius:12px; font-weight:700; font-size:14px;" onclick="quickDeleteFromMenu(\''+it.id+'\')">🗑 Obriši</button>'+
-    '</div></div>';
-  document.body.appendChild(b);
-  b.addEventListener('click',(e)=>{ if(e.target===b) closeCardQuickMenu(); });
-  cardMenuCloseFn = ()=>{ const bb=document.getElementById('cardMenuBackdrop'); if(bb) bb.remove(); cardMenuCloseFn=null; };
-  pushOverlay(cardMenuCloseFn);
-}
-function quickTogglePin(id){
-  const it = getItem(id);
-  if(!it) return;
-  it.pinned = !it.pinned;
-  persistItems();
-  closeCardQuickMenu();
-  render();
-  showBanner(it.pinned ? 'Zakačeno na vrh.' : 'Otkačeno.', 'info');
-}
-function closeCardQuickMenu(){
-  if(cardMenuCloseFn){ closeOverlay(cardMenuCloseFn); cardMenuCloseFn = null; }
-}
-function quickDeleteFromMenu(id){
-  const oldFn = cardMenuCloseFn;
-  cardMenuCloseFn = null;
-  confirmDeleteItem(id, oldFn);
 }
 
 
@@ -1302,7 +1453,11 @@ function setSortMode(mode){
 function render(){
   const app = document.getElementById('app');
   const qWords = foldAll(searchQuery).split(' ').filter(Boolean);
-  const filtered = sortItems(qWords.length ? items.filter(it=>searchHit(it, qWords)) : items);
+  const cf = curFolder();
+  /* pretraga traži po svim fasciklama; inače se vidi izabrana fascikla */
+  const filtered = sortItems(qWords.length ? items.filter(it=>searchHit(it, qWords)) : (cf ? items.filter(it=>it.folder===cf) : items));
+  const sel = (it)=> selSet ? (selSet.has(it.id) ? ' is-sel' : '') : '';
+  const dot = selSet ? '<span class="sel-dot"></span>' : '';
   document.body.classList.toggle('searching', !!searchOpen);
   const thumb = (it)=>{ const sl = slikaOf(it);
     return '<div class="med-thumb"'+(sl?'':' style="font-size:26px;"')+'>'+(sl ? '<img src="'+sl+'">' : (it.ikonica||'📦'))+'</div>'; };
@@ -1314,10 +1469,10 @@ function render(){
   }
   const press = (it)=>' onclick="handleCardClick(\''+it.id+'\')" onpointerdown="startCardLongPress(\''+it.id+'\')" onpointerup="cancelCardLongPress()" onpointerleave="cancelCardLongPress()" onpointercancel="cancelCardLongPress()"';
   if(filtered.length===0){
-    listHtml = '<div class="empty">'+(qWords.length ? 'Nema stvari koje odgovaraju pretrazi "'+escapeHtml(searchQuery)+'".' : 'Još nema zabeleženih stvari.<br>Izgovori ili ukucaj dole šta je i gde je, ili dodirni „Dodaj“ gore.')+'</div>';
+    listHtml = '<div class="empty">'+(qWords.length ? 'Nema stvari koje odgovaraju pretrazi "'+escapeHtml(searchQuery)+'".' : cf && items.length ? 'U ovoj fascikli još nema stvari.<br>Nova stvar dodata ovde ide u nju; postojeće dodaš dugim pritiskom → „Premesti u“.' : 'Još nema zabeleženih stvari.<br>Izgovori ili ukucaj dole šta je i gde je, ili dodirni „Dodaj“ gore.')+'</div>';
   } else if(settings.viewMode==='mreza'){
     listHtml = '<div class="grid-list">'+
-      filtered.map(it=>'<div class="grid-card" id="item-'+it.id+'"'+press(it)+'>'+thumb(it)+
+      filtered.map(it=>'<div class="grid-card'+sel(it)+'" id="item-'+it.id+'" data-sid="'+it.id+'"'+press(it)+'>'+dot+thumb(it)+
           '<div class="gc-name">'+(it.pinned?'📌 ':'')+escapeHtml(displayNaziv(it.naziv))+'</div>'+
           '<div class="gc-sub">'+escapeHtml(it.mesto||'')+'</div>'+
           '</div>').join('')+
@@ -1328,9 +1483,9 @@ function render(){
         const gk = groupKeyForSort(it);
         let headerHtml = '';
         if(gk!==null && gk!==lastGroup){ headerHtml = '<div class="group-header">'+escapeHtml(gk)+'</div>'; lastGroup = gk; }
-        return headerHtml+'<div class="med-card" id="item-'+it.id+'"'+press(it)+'>'+thumb(it)+
+        return headerHtml+'<div class="med-card'+sel(it)+'" id="item-'+it.id+'" data-sid="'+it.id+'"'+press(it)+'>'+thumb(it)+
           '<div class="med-info"><div class="med-name">'+(it.pinned?'📌 ':'')+escapeHtml(displayNaziv(it.naziv))+'</div>'+
-          '<div class="med-sub">'+escapeHtml(it.mesto||'')+'</div></div>'+
+          '<div class="med-sub">'+escapeHtml(it.mesto||'')+'</div></div>'+dot+
           '</div>';
       }).join('');
   }
@@ -1338,23 +1493,28 @@ function render(){
   app.innerHTML =
     '<div class="topbar">'+
     backupReminderHtml()+
-    '<div class="home-head"><span class="home-mark">'+HOME_IC.mark+'</span>'+
-    '<div class="home-tt"><div class="app-title serif">Gde sam ostavio</div><div class="home-count">Sve stvari ('+filtered.length+')</div></div>'+
+    (selSet ? '<div class="sel-head"><button class="icon-btn" onclick="exitSel()" aria-label="Završi označavanje">'+SEL_IC.x+'</button>'+
+      '<div class="sel-title">Izabrano: '+selSet.size+'</div><button class="icon-btn" onclick="selAll()" aria-label="Izaberi sve">'+SEL_IC.all+'</button></div>' : '')+
+    '<div class="home-head"'+(selSet?' style="display:none"':'')+'><span class="home-mark">'+HOME_IC.mark+'</span>'+
+    '<div class="home-tt"><div class="app-title serif">Gde sam ostavio</div><div class="home-count">'+(cf && !qWords.length ? escapeHtml(getFolder(cf).naziv) : 'Sve stvari')+' ('+filtered.length+')</div></div>'+
     '<button class="icon-btn" onclick="toggleViewMode()" title="Promeni prikaz">'+(settings.viewMode==='mreza'?ic('☰','list'):ic('▦','grid'))+'</button>'+
     '<button class="icon-btn" onclick="openSettings()" title="Podešavanja">'+ic('⚙','gear')+'</button>'+
     '</div>'+
     (searchOpen
       ? '<div class="search-wrap home-search"><span class="sicon">'+ic('🔍','search')+'</span><input id="searchInput" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Pretraži stvar, mesto, napomenu..." value="'+escapeHtml(searchQuery)+'" oninput="setSearch(this.value)" autofocus><button class="search-x" onclick="toggleSearch()" aria-label="Zatvori pretragu">✕</button></div>'
-      : '<div class="home-sq-row">'+
+      : (selSet ? '' : '<div class="home-sq-row">'+
         '<button class="home-sq sq-main" onclick="openItemForm(null)"><span class="sq-box">'+HOME_IC.plus+'</span>Dodaj</button>'+
         '<button class="home-sq" onclick="toggleSearch()"><span class="sq-box">'+HOME_IC.search+'</span>Pretraži</button>'+
         '<button class="home-sq" onclick="openSortSheet()"><span class="sq-box">'+HOME_IC.sort+'</span>Sortiraj</button>'+
         '<button class="home-sq" onclick="openChatMode()"><span class="sq-box">'+HOME_IC.ai+'</span>AI</button>'+
-        '</div>')+
+        '</div>')+foldChipsHtml())+
     '</div>'+
     '<div class="list-area">'+listHtml+(qWords.length ? aiSearchHtml(filtered.length) : '')+'</div>';
   _swOpen = null;
-  if(settings.viewMode!=='mreza') app.querySelectorAll('.list-area > .med-card').forEach(c=>swipeToDelete(c, c.id.slice(5)));
+  if(settings.viewMode!=='mreza' && !selSet) app.querySelectorAll('.list-area > .med-card').forEach(c=>swipeToDelete(c, c.id.slice(5)));
+  renderSelBar();
+  const fr = document.getElementById('foldRow'), on = fr && fr.querySelector('.fold-chip.on');
+  if(on && fr) fr.scrollLeft = Math.max(0, on.offsetLeft - 16);
 
   if(searchOpen){
     setTimeout(()=>{ const el=document.getElementById('searchInput'); if(el) el.focus(); }, 30);
@@ -1442,7 +1602,7 @@ function confirmDeleteItem(id, swapFromFn){
 }
 
 /* ---------- ADD / EDIT FORM (draft-based, da ne izgubi unos pri osvezavanju zbog fotografije) ---------- */
-const APP_VERSION = 5; /* svaka objava: +1, isti broj u linku ?v=N i u keš imenu sw.js */
+const APP_VERSION = 6; /* svaka objava: +1, isti broj u linku ?v=N i u keš imenu sw.js */
 /* MODUL ai-dnevnik v1 — izvor: Arhiva v174 (Podešavanja → AI obrada: trošak i poslednje obrade, probano 20.10.2026.)
 Upotreba (uz modul gemini v2):
   const log = [], t0 = Date.now();
@@ -1678,7 +1838,7 @@ function applyChatActions(msgIdx){
         if(it){ if(trashAdd(it)) items = items.filter(i=>i.id!==act.stavka_id); else failed++; }
       } else if(act.tip==='dodaj'){
         const f = ciste(act.polja);
-        if(f.naziv) items.push(Object.assign({ id: uid('m'), naziv:'', mesto:'', ikonica:'📦', createdAt: now, updatedAt: now }, f));
+        if(f.naziv) items.push(Object.assign({ id: uid('m'), naziv:'', mesto:'', ikonica:'📦', createdAt: now, updatedAt: now }, curFolder() ? { folder: curFolder() } : {}, f));
       }
     }catch(err){}
   });
@@ -1866,6 +2026,7 @@ async function submitQuickText(){
 function saveQuickItem(f){
   const now = new Date().toISOString();
   const it = { id: uid('m'), naziv: f.naziv, mesto: f.mesto||'', ikonica:'📦', createdAt: now, updatedAt: now };
+  if(curFolder()) it.folder = curFolder();   /* v6: nova stvar ide u fasciklu koja je otvorena */
   items.push(it);
   if(!persistItems()){ items = items.filter(x=>x.id!==it.id); render(); return null; }
   render();
@@ -2335,7 +2496,7 @@ function doSaveItem(editId, keepOpen, note){
     if(!pics.length){ delete it.opisSlika; delete it.opisSig; }
   } else {
     id = uid('m');
-    items.push(Object.assign({ id: id, ikonica:'📦', createdAt: now, updatedAt: now }, f));
+    items.push(Object.assign({ id: id, ikonica:'📦', createdAt: now, updatedAt: now }, curFolder() ? { folder: curFolder() } : {}, f));
   }
   if(!persistItems()){   /* nije upisano: vraća se staro stanje, kartica ostaje otvorena */
     if(editId){ const it = getItem(editId); Object.keys(it).forEach(k=>delete it[k]); Object.assign(it, old); } else { items = items.filter(x=>x.id!==id); }
@@ -2897,6 +3058,7 @@ function trashRestoreSelected(){
       if(SLIKE.has(it.id)) Slike.postavi(nid, SLIKE.get(it.id));
       it.id = nid;
     }
+    if(it.folder && !getFolder(it.folder)) delete it.folder;   /* v6: fascikla u međuvremenu obrisana */
     items.push(it);
   });
   if(!persistItems()){ items = items.slice(0, items.length - chosen.length); render(); return; }   /* v54: ostaje u korpi */
@@ -2970,9 +3132,11 @@ function openHelpScreen(){
     { t:'Šta je na slikama', c:'Posle čuvanja slika AI ih u pozadini pogleda i zapiše kratak opis (ispod velike slike: „Na slikama: …“). Pretraga posle nalazi i te reči — npr. „šrafciger“ u kutiji sa alatom. Nov opis se pravi samo kad promeniš slike; bez interneta se napravi kasnije.' },
     { t:'Pretraga', c:'„Pretraži“ traži po nazivu, mestu i opisu slika: ćirilica ili latinica, sa kvačicama ili bez, velika ili mala slova, više reči bilo kojim redom, deo reči, i bez crtica i razmaka („golf7“ = „Golf 7“). Ispod rezultata „✨ Traži sa AI“ traži po značenju (npr. „dokumenta“ nalazi pasoš). „Sortiraj“: Naziv, Mesto ili Najnovije.' },
     { t:'AI ćaskanje', c:'Dugme „AI“: pitaj „Gde je pasoš?“ ili „Šta držim u garaži?“. AI može i da predloži izmenu (npr. novo mesto) ili brisanje, ali ništa se ne menja dok sam ne potvrdiš.' },
-    { t:'Prikaz i brzi meni', c:'Ikonica ▦/☰ menja prikaz između liste i mreže. Dug pritisak na stvar: zakači na vrh ili obriši.' },
+    { t:'Prikaz', c:'Ikonica ▦/☰ menja prikaz između liste i mreže.' },
+    { t:'Fascikle', c:'Ispod dugmadi su fascikle: „Sve“ prikazuje sve stvari, dodir na fasciklu samo njene, a „+“ pravi novu. Nova stvar (dole glasom, „Dodaj“ ili AI) ide u fasciklu koja je otvorena. Dug pritisak na fasciklu: Preimenuj ili Obriši fasciklu (stvari iz nje ostaju, samo bez fascikle). Pretraga uvek traži po svim fasciklama.' },
+    { t:'Označavanje više stvari', c:'Dug pritisak na stvar je označi; dodirom označavaš još. Gore: ✕ završava (i „nazad“), ikonica desno označi sve. Dole: Zakači/Otkači (na vrh spiska), Premesti u (fasciklu ili nova fascikla) i Izbriši (u korpu).' },
     { t:'Izmena podataka', c:'Dodir na polje: stari tekst se vidi osenčen, a kucanjem ili glasom upisuješ novo. Drugi dodir vraća stari tekst za izmenu dela. Taster za brisanje u praznom polju vraća na prethodno polje.' },
-    { t:'Brisanje i korpa', c:'Povuci stvar ulevo → crveno dugme „Izbriši“, ili Obriši dole u kartici. Obrisano ide u korpu (Podešavanja → Korpa) i čeka zadati broj dana (podrazumevano 30), pa se samo trajno briše. U korpi izabereš stvari, pa „Vrati“ (sa svim podacima i slikama) ili „Obriši trajno“.' },
+    { t:'Brisanje i korpa', c:'Povuci stvar ulevo → crveno dugme „Izbriši“, ili Obriši dole u kartici, ili više njih odjednom: dug pritisak → označi → Izbriši. Obrisano ide u korpu (Podešavanja → Korpa) i čeka zadati broj dana (podrazumevano 30), pa se samo trajno briše. U korpi izabereš stvari, pa „Vrati“ (sa svim podacima i slikama) ili „Obriši trajno“.' },
     { t:'Obaveštenja', c:'Poruke se pojavljuju gore: zeleno kad je nešto urađeno, crveno kad nije uspelo. Nestanu same.' },
     { t:'Rezervna kopija', c:'Podaci se čuvaju samo u Chrome-u na ovom telefonu: kad se obrišu podaci sajta, nestaju. Podešavanja → Rezervna kopija: „Podeli kopiju“ otvara meni za deljenje, pa kopiju jednim dodirom pošalješ na Google Drive ili mejlom; ime kopije ima datum i vreme. Kopija sadrži i sve slike. „Izvezi bekap“ preuzima fajl na telefon, a „Uvezi bekap“ vraća podatke iz kopije (.txt ili .json). Korpa i Gemini ključ ne ulaze u kopiju. Ako upis u memoriju telefona ikad ne uspe, gore odmah piše crveno „NIJE SAČUVANO!“.' },
     { t:'Dnevnik grešaka', c:'Kad se desi greška (npr. AI ne odgovori ili upis ne uspe), aplikacija je tiho zapiše. Tada u Podešavanjima, ispod broja verzije, sitno crveno piše koliko ih ima; dodir otvara dnevnik (Kopiraj / Obriši).' },
@@ -3080,7 +3244,7 @@ function runDupYes(){ const fn=__dupYes; closeDuplicateWarning(); if(fn) fn(); }
 
 loadSettings();
 applyTheme(getTheme());
-loadItems();
+loadItems(); loadFolders();
 buildEntryBar();
 render();
 Slike.ucitaj().then(()=>{ trashPurgeExpired(); render(); opisSlikaRun(); });
