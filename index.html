@@ -609,18 +609,31 @@ input::selection, textarea::selection{ background:color-mix(in srgb, var(--frame
 body.has-entry .list-area{ padding-bottom:150px; }
 body.searching #entryBar{ display:none; }
 .cd-ttl{ flex:1; min-width:0; display:flex; align-items:center; gap:6px; }
-.cd-ttl input{ flex:0 1 auto; field-sizing:content; min-width:4ch; max-width:100%; border:none; background:transparent; color:var(--text); font-family:var(--font-title, inherit); font-size:21px; font-weight:600; padding:4px 0; outline:none; }
+.cd-ttl input{ flex:0 1 auto; field-sizing:content; min-width:4ch; max-width:100%; border:none; background:transparent; color:var(--text); font-family:var(--font-title, inherit); font-size:18px; font-weight:600; padding:4px 0; outline:none; }
 .cd-ttl input::placeholder{ color:var(--text-dim); }
 .cd-ttl .cd-pen{ color:var(--text-dim); font-size:15px; flex:none; pointer-events:none; }
-.cd-del{ flex:none; border:1px solid var(--coral-line); color:var(--coral); background:transparent; border-radius:999px; padding:7px 14px; font-weight:600; font-size:13px; font-family:inherit; cursor:pointer; }
 .cd-big{ position:relative; width:100%; aspect-ratio:4/3; border-radius:14px; overflow:hidden; border:1px solid var(--line); background:var(--bg-elevated); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; color:var(--text-dim); font-size:13.5px; text-align:center; padding:0; }
 .cd-big img{ width:100%; height:100%; object-fit:cover; display:block; }
 .cd-big .cd-empty-ic{ font-size:40px; opacity:.5; }
 .cd-cnt{ position:absolute; right:10px; bottom:10px; background:rgba(0,0,0,.65); color:#fff; border-radius:999px; padding:5px 11px; font-size:13px; font-weight:600; }
 .cd-opis{ font-size:12.5px; color:var(--text-dim); margin:8px 2px 0; line-height:1.45; }
-.cd-meta{ font-size:12px; color:var(--text-dim); margin:2px 2px 6px; }
+.cd-meta{ font-size:12px; color:var(--text-dim); font-weight:400; }
+/* v3: polje „Gde se nalazi“ popunjava prazan prostor do donjeg reda; dodir ga širi preko celog ekrana (nazad/Gotovo vraća) */
+.form-full .ff-body.cd-body{ display:flex; flex-direction:column; }
+.cd-body > .field{ flex:none; }
+.cd-body > .field.cd-mesto{ flex:1 0 150px; display:flex; flex-direction:column; margin-bottom:4px; }
+.cd-lbl{ display:flex; align-items:baseline; justify-content:space-between; gap:10px; margin-bottom:6px; }
+.cd-lbl label{ margin:0 !important; }
+.cd-mesto textarea{ flex:1 1 auto; min-height:0; resize:none; line-height:1.45; }
+.cd-done{ display:none; flex:none; border:none; background:var(--green-deep); color:var(--on-accent); border-radius:999px; padding:8px 18px; font-weight:700; font-size:14px; font-family:inherit; cursor:pointer; }
+.form-full.mesto-full .ff-head, .form-full.mesto-full .ff-foot.cd-foot, .form-full.mesto-full .cd-body > :not(.cd-mesto), .form-full.mesto-full .cd-meta{ display:none; }
+.form-full.mesto-full .cd-body{ padding-top:calc(12px + env(safe-area-inset-top,0px)); }
+.form-full.mesto-full .cd-lbl{ align-items:center; }
+.form-full.mesto-full .cd-done{ display:block; }
+.form-full.mesto-full .cd-mesto textarea{ font-size:16px; }
 .form-full .ff-foot.cd-foot{ display:flex; justify-content:space-around; align-items:flex-start; padding:10px 8px calc(12px + env(safe-area-inset-bottom)); }
-.cd-foot .home-sq{ flex:0 0 72px; width:72px; margin:0; }
+.cd-foot .home-sq{ flex:0 1 66px; width:66px; min-width:0; margin:0; }
+.cd-foot .cd-delsq .sq-box{ color:var(--coral); border-color:var(--coral-line); }
 .cd-foot .home-sq .sq-box{ font-size:22px; }
 .cd-foot .cd-save .sq-box{ background:var(--green-deep); border-color:var(--green-deep); color:var(--on-accent); }
 .cd-foot .cd-save.dim{ opacity:.45; }
@@ -1409,7 +1422,7 @@ function confirmDeleteItem(id, swapFromFn){
 }
 
 /* ---------- ADD / EDIT FORM (draft-based, da ne izgubi unos pri osvezavanju zbog fotografije) ---------- */
-const APP_VERSION = 2; /* svaka objava: +1, isti broj u linku ?v=N i u keš imenu sw.js */
+const APP_VERSION = 3; /* svaka objava: +1, isti broj u linku ?v=N i u keš imenu sw.js */
 /* MODUL ai-dnevnik v1 — izvor: Arhiva v174 (Podešavanja → AI obrada: trošak i poslednje obrade, probano 20.10.2026.)
 Upotreba (uz modul gemini v2):
   const log = [], t0 = Date.now();
@@ -1525,6 +1538,7 @@ let formDraft = null;
 let formEditId = null;
 let formAnalyzing = false;
 let formCloseFn = null;
+let mestoFull = false, mestoCloseFn = null; /* v3: „Gde se nalazi“ preko celog ekrana */
 
 function knownPlaces(){
   const seen = new Set(); const out = [];
@@ -2082,7 +2096,7 @@ function openItemForm(editId, swapFromFn){
     formCloseFn = ()=>{
       const b = document.getElementById('formBackdrop');
       if(b) b.remove();
-      formDraft = null; formEditId = null;
+      formDraft = null; formEditId = null; mestoFull = false; mestoCloseFn = null;
       document.body.style.overflow='';
       formCloseFn = null;
     };
@@ -2177,19 +2191,21 @@ function renderItemForm(){
   const big = n ? '<button type="button" class="cd-big" onclick="openViewer(0)"><img src="'+formDraft.slike[0]+'"><span class="cd-cnt">1 / '+n+'</span></button>'
     : '<div class="cd-big"><span class="cd-empty-ic">🖼️</span>Još nema slike — Slikaj ili Galerija dole</div>';
   const oldBody = b.querySelector('.ff-body'); const keepScroll = oldBody ? oldBody.scrollTop : 0;
-  b.innerHTML = '<div class="modal form-full">'+
+  b.innerHTML = '<div class="modal form-full'+(mestoFull?' mesto-full':'')+'">'+
     '<div class="ff-head">'+
     '<label class="cd-ttl"><input id="fNaziv" type="text" '+TA+' value="'+escapeHtml(formDraft.naziv)+'" oninput="updateDraft(\'naziv\',this.value)" placeholder="Naziv stvari"><span class="cd-pen">✎</span></label>'+
-    (formEditId ? '<button class="cd-del" onclick="confirmDeleteItem(\''+formEditId+'\')">Obriši</button>' : '')+
     '<button class="modal-close-x" onclick="closeItemForm()" aria-label="Zatvori">✕</button></div>'+
-    '<div class="ff-body">'+
+    '<div class="ff-body cd-body">'+
     '<div class="field">'+big+'<div id="cdStatus">'+cardStatusHtml()+'</div></div>'+
-    '<div class="field"><label>Gde se nalazi</label><textarea id="fMesto" rows="3" style="min-height:84px" '+TA+' oninput="updateDraft(\'mesto\',this.value)" placeholder="npr. Spavaća soba, fioka noćnog ormarića, u plavoj fascikli">'+escapeHtml(formDraft.mesto)+'</textarea></div>'+
-    (it && (it.updatedAt||it.createdAt) ? '<div class="cd-meta">Zabeleženo '+fmtDatum(it.updatedAt||it.createdAt)+'</div>' : '')+
+    '<div class="field cd-mesto"><div class="cd-lbl"><label for="fMesto">Gde se nalazi</label>'+
+    (it && (it.updatedAt||it.createdAt) ? '<span class="cd-meta">Zabeleženo '+fmtDatum(it.updatedAt||it.createdAt)+'</span>' : '')+
+    '<button type="button" class="cd-done" onclick="collapseMesto()">Gotovo</button></div>'+
+    '<textarea id="fMesto" rows="3" '+TA+' onfocus="expandMesto()" onclick="expandMesto()" oninput="updateDraft(\'mesto\',this.value)" placeholder="npr. Spavaća soba, fioka noćnog ormarića, u plavoj fascikli">'+escapeHtml(formDraft.mesto)+'</textarea></div>'+
     '</div>'+
     '<div class="modal-actions ff-foot cd-foot">'+
     '<button class="home-sq" onclick="openCamera()"><span class="sq-box">📷</span>Slikaj</button>'+
     '<button class="home-sq" onclick="pickGallery()"><span class="sq-box">🖼️</span>Galerija</button>'+
+    (formEditId ? '<button class="home-sq cd-delsq" onclick="confirmDeleteItem(\''+formEditId+'\')"><span class="sq-box">🗑</span>Obriši</button>' : '')+
     '<button class="home-sq" onclick="closeItemForm()"><span class="sq-box">✕</span>Otkaži</button>'+
     '<button class="home-sq cd-save" id="cdSave" onclick="saveItemForm()"><span class="sq-box">✓</span>Sačuvaj</button>'+
     '</div></div>';
@@ -2211,6 +2227,20 @@ function cardStatusHtml(){
   if(it && it.opisSlika && formDraft.slike.length && it.opisSig === picSig(formDraft.slike)) return '<div class="cd-opis">Na slikama: '+escapeHtml(it.opisSlika)+'</div>';
   return '';
 }
+/* v3: dodir na „Gde se nalazi“ → polje preko celog ekrana (samo klasa — tekst i fokus se ne diraju, Gboard glas radi);
+   „nazad“ ili Gotovo vraća karticu (jedan korak istorije). */
+function expandMesto(){
+  if(mestoFull || !formDraft) return;
+  const m = document.querySelector('#formBackdrop .form-full'); if(!m) return;
+  mestoFull = true; m.classList.add('mesto-full');
+  mestoCloseFn = ()=>{
+    mestoFull = false; mestoCloseFn = null;
+    const mm = document.querySelector('#formBackdrop .form-full'); if(mm) mm.classList.remove('mesto-full');
+    const ta = document.getElementById('fMesto'); if(ta && document.activeElement === ta) ta.blur();
+  };
+  pushOverlay(mestoCloseFn);
+}
+function collapseMesto(){ if(mestoCloseFn) closeOverlay(mestoCloseFn); }
 function refreshCardStatus(){ const el = document.getElementById('cdStatus'); if(el) el.innerHTML = cardStatusHtml(); }
 function closeItemForm(){
   if(formCloseFn){ closeOverlay(formCloseFn); formCloseFn = null; }
@@ -2778,7 +2808,7 @@ function openHelpScreen(){
   const sections = [
     { t:'Čemu služi', c:'Zapišeš gde si nešto ostavio ili spremio (pasoš, rezervni ključ, garanciju, zimske gume…), pa to kasnije brzo nađeš: naziv, gde se nalazi i slike.' },
     { t:'Unos glasom ili tekstom', c:'Polje dole na početnom ekranu: izgovori (mikrofon na tastaturi) ili ukucaj rečenicu, npr. „pasoš je u spavaćoj sobi, u fioci noćnog ormarića“, pa ➤. AI odvoji stvar i mesto, odmah sačuva i otvori karticu, gde odmah možeš da ispraviš ili dodaš slike. Ako stvar već postoji (premestio si je), samo joj se promeni mesto. Bez Gemini ključa ili kad AI ne uspe, rečenica se sačuva kao naziv, pa je ispraviš u kartici.' },
-    { t:'Kartica stvari', c:'Dodir na stvar (ili „Dodaj“ gore) otvara karticu: naziv je u naslovu (dodir na njega ga menja), ispod je velika profilna slika i polje „Gde se nalazi“. Dole su Slikaj, Galerija, Otkaži i Sačuvaj. Sačuvaj je bled dok ništa ne promeniš.' },
+    { t:'Kartica stvari', c:'Dodir na stvar (ili „Dodaj“ gore) otvara karticu: naziv je u naslovu (dodir na njega ga menja), ispod je velika profilna slika i polje „Gde se nalazi“ sa datumom unosa. Dodir na to polje ga širi preko celog ekrana da lakše pišeš i čitaš; „nazad“ ili Gotovo vraća karticu. Dole su Slikaj, Galerija, Obriši, Otkaži i Sačuvaj. Sačuvaj je bled dok ništa ne promeniš.' },
     { t:'Slike', c:'Slikaj otvara kameru u aplikaciji: slikaj koliko treba (gore piše „Slikano: N“), pa Gotovo — sve slike idu u karticu. Galerija: izaberi više slika odjednom. Slike se čuvaju cele (bez isecanja), umanjene da ne zauzimaju previše mesta. Prvi put Chrome traži dozvolu za kameru; bez nje se otvara obična kamera telefona.' },
     { t:'Profilna slika', c:'Dodir na veliku sliku otvara sve slike preko celog ekrana; prevlačenjem ih listaš. „★ Postavi kao profilnu“ bira tu sliku za veliku; 🗑 briše sliku. Dodir na samu sliku vraća nazad bez promene. Sve postaje konačno tek kad pritisneš Sačuvaj.' },
     { t:'Šta je na slikama', c:'Posle čuvanja slika AI ih u pozadini pogleda i zapiše kratak opis (ispod velike slike: „Na slikama: …“). Pretraga posle nalazi i te reči — npr. „šrafciger“ u kutiji sa alatom. Nov opis se pravi samo kad promeniš slike; bez interneta se napravi kasnije.' },
@@ -2786,7 +2816,7 @@ function openHelpScreen(){
     { t:'AI ćaskanje', c:'Dugme „AI“: pitaj „Gde je pasoš?“ ili „Šta držim u garaži?“. AI može i da predloži izmenu (npr. novo mesto) ili brisanje, ali ništa se ne menja dok sam ne potvrdiš.' },
     { t:'Prikaz i brzi meni', c:'Ikonica ▦/☰ menja prikaz između liste i mreže. Dug pritisak na stvar: zakači na vrh ili obriši.' },
     { t:'Izmena podataka', c:'Dodir na polje: stari tekst se vidi osenčen, a kucanjem ili glasom upisuješ novo. Drugi dodir vraća stari tekst za izmenu dela. Taster za brisanje u praznom polju vraća na prethodno polje.' },
-    { t:'Brisanje i korpa', c:'Povuci stvar ulevo → crveno dugme „Izbriši“, ili Obriši gore u kartici. Obrisano ide u korpu (Podešavanja → Korpa) i čeka zadati broj dana (podrazumevano 30), pa se samo trajno briše. U korpi izabereš stvari, pa „Vrati“ (sa svim podacima i slikama) ili „Obriši trajno“.' },
+    { t:'Brisanje i korpa', c:'Povuci stvar ulevo → crveno dugme „Izbriši“, ili Obriši dole u kartici. Obrisano ide u korpu (Podešavanja → Korpa) i čeka zadati broj dana (podrazumevano 30), pa se samo trajno briše. U korpi izabereš stvari, pa „Vrati“ (sa svim podacima i slikama) ili „Obriši trajno“.' },
     { t:'Obaveštenja', c:'Poruke se pojavljuju gore: zeleno kad je nešto urađeno, crveno kad nije uspelo. Nestanu same.' },
     { t:'Rezervna kopija', c:'Podaci se čuvaju samo u Chrome-u na ovom telefonu: kad se obrišu podaci sajta, nestaju. Podešavanja → Rezervna kopija: „Podeli kopiju“ otvara meni za deljenje, pa kopiju jednim dodirom pošalješ na Google Drive ili mejlom; ime kopije ima datum i vreme. Kopija sadrži i sve slike. „Izvezi bekap“ preuzima fajl na telefon, a „Uvezi bekap“ vraća podatke iz kopije (.txt ili .json). Korpa i Gemini ključ ne ulaze u kopiju. Ako upis u memoriju telefona ikad ne uspe, gore odmah piše crveno „NIJE SAČUVANO!“.' },
     { t:'Dnevnik grešaka', c:'Kad se desi greška (npr. AI ne odgovori ili upis ne uspe), aplikacija je tiho zapiše. Tada u Podešavanjima, ispod broja verzije, sitno crveno piše koliko ih ima; dodir otvara dnevnik (Kopiraj / Obriši).' },
