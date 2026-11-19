@@ -934,7 +934,7 @@ function shareBackup(){
     showBanner('Kopija je podeljena.', 'info');
   }).catch(err=>{
     if(err && err.name==='AbortError') return;
-    if(err && err.name==='NotAllowedError'){ showBanner('Telefon ne dozvoljava deljenje ove kopije ('+fmtMB(file.size)+'). Dodirni „Sačuvaj kopiju na telefon“, pa je otpremi na Drive.'); return; }
+    if(err && err.name==='NotAllowedError'){ showBanner('Telefon odbija deljenje kopije ('+fmtMB(file.size)+'). Koristi „Sačuvaj kopiju na telefon“.'); return; }
     showBanner('Deljenje nije uspelo: '+(err && err.message ? err.message : err));
   });
 }
@@ -967,7 +967,7 @@ function exportBackup(){
   render();
   const hintEl = document.getElementById('lastBackupHint');
   if(hintEl) hintEl.textContent = 'Poslednji bekap: '+lastBackupDisplay();
-  showBanner('Kopija ('+fmtMB(blob.size)+') je u Preuzimanjima. Prebaci je na Google Drive: Drive → ＋ → Otpremi → Download.', 'info');
+  showBanner('Kopija ('+fmtMB(blob.size)+') je u Preuzimanjima — prebaci je na Google Drive.', 'info');
 }
 function triggerImportBackup(){
   const inp = document.getElementById('backupFileInput');
@@ -3210,7 +3210,7 @@ function openSettingsSub(key){
       ((canShareBackup() && small) ? '<button class="cancel-btn" style="flex:1;" id="shareBackupBtn" onclick="shareBackup()">Podeli (Drive, mejl…)</button>' : '')+
       '<button class="cancel-btn" style="flex:1;" onclick="triggerImportBackup()">Uvezi kopiju</button>'+
       '</div>'+
-      ((canShareBackup() && !small) ? '<div class="field-hint" id="shareTooBigHint">„Podeli“ je sklonjeno: kopija je veća od 45 MB, a toliku telefon ne pušta kroz meni za deljenje.</div>' : '')+
+      ((canShareBackup() && !small) ? '<div class="field-hint" id="shareTooBigHint">„Podeli“ je sklonjeno: kopija je veća od 45 MB, a veliku kopiju telefon odbija kroz meni za deljenje.</div>' : '')+
       '<input type="file" id="backupFileInput" accept=".json,.txt,application/json,text/plain" style="display:none" onchange="handleImportFile(this)">'+
       '<div class="field-hint" id="lastBackupHint">Poslednji bekap: '+lastBackupDisplay()+'</div>'+
       '<div class="field" style="margin-top:14px;"><label>Podseti me na svakih (dana) bez bekapa</label>'+
