@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Proba velike kopije — Gde sam ostavio</title>
+<style>
+  body{ margin:0; padding:16px; background:#111; color:#eee; font:16px/1.45 system-ui, sans-serif; }
+  h1{ font-size:20px; margin:0 0 6px; }
+  p.n{ color:#aaa; font-size:14px; margin:0 0 14px; }
+  button{ display:block; width:100%; height:52px; margin:10px 0; border:none; border-radius:14px; background:#2e7d32; color:#fff; font-size:17px; font-weight:700; }
+  button.sec{ background:#333; } button.del{ background:#5a1d1d; color:#ffb4b4; }
+  button:disabled{ opacity:.4; }
+  label{ display:flex; gap:10px; align-items:center; margin:8px 0; }
+  select{ font-size:16px; padding:6px; border-radius:8px; }
+  #st{ margin-top:14px; padding:12px; background:#1c1c1c; border-radius:12px; white-space:pre-wrap; font-size:14px; min-height:60px; }
+  .ok{ color:#8f8; } .err{ color:#f88; }
+  progress{ width:100%; height:14px; }
+</style>
+</head>
+<body>
+<h1>🧪 Proba velike kopije</h1>
+<p class="n">Ova stranica NE dira tvoje podatke iz aplikacije: probne stvari i slike idu u posebnu probnu memoriju („gso-proba-kopije“) i na kraju se brišu.
+Slike su veštačke, iste veličine kao tvoja prava fotografija (~570 KB, WebP 85%, 1200×1600). Kopija se pravi istim kodom kao u aplikaciji (v12).</p>
+
+<label>Broj stvari (po 3 slike): <select id="n"><option>10</option><option>50</option><option selected>100</option><option>150</option></select></label>
+<button id="b1" onclick="napravi()">1. Napravi probne podatke</button>
+<progress id="pr" value="0" max="1" style="display:none"></progress>
+<button id="b2" class="sec" onclick="ucitaj()">2. Učitaj kao aplikacija pri pokretanju</button>
+<button id="b3" onclick="podeli()">3. Podeli kopiju (kao u aplikaciji)</button>
+<button id="b4" class="sec" onclick="izvezi()">4. Izvezi bekap (preuzimanje)</button>
+<button id="b5" class="del" onclick="obrisi()">5. Obriši probne podatke</button>
+<div id="st">Kreni od 1.</div>
+
+<script>
+/* proba v1 (19.11.2026): verna kopija putanje iz index.html v12 — Slike.ucitaj (getAll u Map) i backupBlob/shareBackup/exportBackup.
+   Posebna baza DB, bez localStorage — aplikacijini podaci se ne diraju. */
+const DB = 'gso-proba-kopije', ST = 'slike', SLIKE = new Map(); let items = [];
+const st = document.getElementById('st');
+const log = (t, c)=>{ st.innerHTML += '\n' + (c ? '<span class="'+c+'">'+t+'</span>' : t); st.scrollTop = 1e9; };
+const mb = b=>(b/1048576).toFixed(1)+' MB';
+const mem = ()=>{ try{ return performance.memory ? ' · JS memorija '+mb(performance.memory.usedJSHeapSize) : ''; }catch(e){ return ''; } };
+function db(){ return new Promise((res, rej)=>{ const r = indexedDB.open(DB, 1); r.onupgradeneeded = ()=>r.result.createObjectStore(ST, {keyPath:'id'}); r.onsuccess = ()=>res(r.result); r.onerror = ()=>rej(r.error); }); }
+function tx(mode, fn){ return db().then(d=>new Promise((res, rej)=>{ const t = d.transaction(ST, mode), o = {}; fn(t.objectStore(ST), o); t.oncomplete = ()=>{ d.close(); res(o.v); }; t.onerror = t.onabort = ()=>{ d.close(); rej(t.error || new Error('upis nije uspeo')); }; })); }
+function busy(on){ ['b1','b2','b3','b4','b5'].forEach(id=>document.getElementById(id).disabled = on); }
+function pic(seed, amp){
+  const c = document.createElement('canvas'); c.width = 1200; c.height = 1600; const x = c.getContext('2d');
+  const g = x.createLinearGradient(0, 0, 1200, 1600); g.addColorStop(0, 'hsl('+(seed*37%360)+',30%,55%)'); g.addColorStop(1, '#345'); x.fillStyle = g; x.fillRect(0, 0, 1200, 1600);
+  const d = x.getImageData(0, 0, 1200, 1600), a = d.data; let s = seed*2654435761>>>0;
+  for(let i = 0; i < a.length; i += 4){ s = (s*1103515245+12345)>>>0; const n = (((s>>>16)&255)/255-0.5)*amp; a[i] += n; a[i+1] += n; a[i+2] += n; }
+  x.putImageData(d, 0, 0); x.fillStyle = '#fff'; x.font = 'bold 90px sans-serif'; x.fillText('PROBA '+seed, 60, 160);
+  const w = c.toDataURL('image/webp', 0.85); return w.startsWith('data:image/webp;') ? w : c.toDataURL('image/jpeg', 0.85);
+}
+async function napravi(){
+  const N = +document.getElementById('n').value; busy(true); st.textContent = 'Pravim '+N+' stvari × 3 slike…';
+  const pr = document.getElementById('pr'); pr.style.display = ''; pr.max = N; pr.value = 0;
+  const t0 = performance.now(); let amp = 38, tot = 0, cnt = 0;
+  try{
+    await tx('readwrite', s=>s.clear());
+    for(let i = 0; i < N; i++){
+      const arr = [];
+      for(let k = 0; k < 3; k++){
+        const u = pic(i*3+k+1, amp); arr.push(u); tot += u.length; cnt++;
+        const kb = u.length*3/4/1024; if(kb < 530) amp *= 1.06; else if(kb > 610) amp *= 0.94;   /* drži ~570 KB */
+      }
+      await tx('readwrite', s=>s.put({ id:'proba'+i, data:arr }));
+      pr.value = i+1; if(i % 10 === 9) st.textContent = 'Napravljeno '+(i+1)+' / '+N+' stvari ('+mb(tot)+' teksta)…'+mem();
+      await new Promise(r=>setTimeout(r, 0));
+    }
+    log('✓ Napravljeno '+N+' stvari, '+cnt+' slika, ukupno '+mb(tot*3/4)+' slika ('+mb(tot)+' kao tekst u memoriji), prosek '+Math.round(tot*3/4/cnt/1024)+' KB po slici. Trajalo '+Math.round((performance.now()-t0)/1000)+' s.', 'ok');
+    log('Sada 2. (da proveriš i pokretanje, možeš prvo da zatvoriš i ponovo otvoriš ovu stranicu).');
+  }catch(e){ log('✗ Pravljenje nije uspelo: '+(e && e.message || e), 'err'); }
+  pr.style.display = 'none'; busy(false);
+}
+/* isto kao Slike.ucitaj u aplikaciji: getAll → Map */
+async function ucitaj(){
+  busy(true); SLIKE.clear(); const t0 = performance.now();
+  try{
+    const list = await tx('readonly', (s, o)=>{ const r = s.getAll(); r.onsuccess = ()=>{ o.v = r.result || []; }; });
+    list.forEach(x=>{ if(x && x.id && x.data) SLIKE.set(x.id, x.data.filter(Boolean)); });
+    const now = new Date().toISOString();
+    items = list.map((x, i)=>({ id:x.id, naziv:'Probna stvar '+(i+1), mesto:'Proba, fioka '+(i+1), ikonica:'📦', createdAt:now, updatedAt:now }));
+    let n = 0, b = 0; SLIKE.forEach(a=>{ n += a.length; a.forEach(u=>b += u.length); });
+    if(!items.length) log('Nema probnih podataka — prvo 1.', 'err');
+    else log('✓ Učitano kao pri pokretanju: '+items.length+' stvari, '+n+' slika ('+mb(b)+'), za '+Math.round(performance.now()-t0)+' ms.'+mem(), 'ok');
+  }catch(e){ log('✗ Učitavanje nije uspelo: '+(e && e.message || e), 'err'); }
+  busy(false);
+}
+/* isto kao buildBackup + backupBlob u aplikaciji */
+function buildBackup(){
+  const withPics = items.map(it=> SLIKE.has(it.id) ? Object.assign({}, it, { slike: SLIKE.get(it.id).slice() }) : it);
+  return { version:1, app:'gde-sam-ostavio', exportedAt: new Date().toISOString(), items: withPics, folders: [], settings: {}, backupIntervalDays: 7 };
+}
+function backupBlob(type){
+  const b = buildBackup(), head = Object.assign({}, b); delete head.items;
+  let blob = new Blob([JSON.stringify(head).slice(0, -1) + ',"items":['], {type});
+  b.items.forEach((it, i)=>{ blob = new Blob([blob, (i ? ',' : '') + JSON.stringify(it)], {type}); });
+  return new Blob([blob, ']}'], {type});
+}
+function spreman(){ if(!items.length){ log('Prvo 2. (učitaj), pa kopija.', 'err'); return false; } return true; }
+function podeli(){
+  if(!spreman()) return;
+  const name = 'proba-kopije-gde-sam-ostavio.txt'; let file; const t0 = performance.now();
+  try{ file = new File([backupBlob('text/plain')], name, {type:'text/plain'}); }
+  catch(e){ log('✗ Pravljenje kopije nije uspelo: '+(e && e.message || e), 'err'); return; }
+  log('Kopija napravljena: '+mb(file.size)+' za '+Math.round(performance.now()-t0)+' ms. Otvara se meni za deljenje…'+mem());
+  if(!(navigator.canShare && navigator.canShare({files:[file]}))){ log('✗ Telefon kaže da ovaj fajl ne može da se deli (canShare = ne).', 'err'); return; }
+  navigator.share({ files:[file], title:name }).then(()=>log('✓ Deljenje prošlo (meni je prihvatio fajl). Proveri na Drive-u da li je fajl stigao i koliki je.', 'ok'))
+    .catch(e=>{ if(e && e.name === 'AbortError') log('Meni zatvoren bez slanja.'); else log('✗ Deljenje nije uspelo: '+(e && e.message || e), 'err'); });
+}
+function izvezi(){
+  if(!spreman()) return;
+  const t0 = performance.now();
+  try{
+    const blob = backupBlob('application/json'), url = URL.createObjectURL(blob), a = document.createElement('a');
+    a.href = url; a.download = 'proba-kopije-gde-sam-ostavio.json'; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url), 60000);
+    log('✓ Preuzimanje pokrenuto: '+mb(blob.size)+' ('+Math.round(performance.now()-t0)+' ms). Proveri u Preuzimanjima da li je fajl ceo.'+mem(), 'ok');
+  }catch(e){ log('✗ Izvoz nije uspeo: '+(e && e.message || e), 'err'); }
+}
+async function obrisi(){
+  busy(true); SLIKE.clear(); items = [];
+  await new Promise(res=>{ const r = indexedDB.deleteDatabase(DB); r.onsuccess = r.onerror = r.onblocked = ()=>res(); });
+  log('✓ Probni podaci obrisani. Probni fajl na Drive-u / u Preuzimanjima obriši ručno.', 'ok'); busy(false);
+}
+window.addEventListener('error', e=>log('✗ Greška: '+e.message, 'err'));
+window.addEventListener('unhandledrejection', e=>log('✗ Greška: '+((e.reason && e.reason.message) || e.reason), 'err'));
+</script>
+</body>
+</html>
