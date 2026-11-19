@@ -884,7 +884,7 @@ let _saveFailAt = 0;
 function warnSaveFailed(){
   const n = Date.now(); if(n - _saveFailAt < 4000) return; _saveFailAt = n;
   logError('čuvanje', 'Upis u memoriju telefona nije uspeo (pun prostor ili zabrana).');
-  showNote('NIJE SAČUVANO! Memorija je puna ili nedostupna — odmah podeli kopiju.', {warn:true});
+  showNote('NIJE SAČUVANO! Memorija je puna ili nedostupna — odmah sačuvaj kopiju (Podešavanja → Rezervna kopija).', {warn:true});
 }
 function saveFailActive(){ return Date.now() - _saveFailAt < 6000; }
 function persistChecked(key, val){ if(!lsSet(key, val)){ warnSaveFailed(); return false; } return true; }
@@ -911,6 +911,14 @@ function backupShareName(){
   const d = new Date(), p = n=>String(n).padStart(2,'0');
   return 'gde-sam-ostavio-kopija-'+todayISO()+'-'+p(d.getHours())+'.'+p(d.getMinutes())+'.txt';
 }
+/* v13 (Zoran 19.11., kao Arhiva u pregledaču): glavna kopija = PREUZIMANJE u Preuzimanja (telefon 19.11.: 300 slika, 221 MB → ceo fajl).
+   „Podeli“ samo dok je kopija mala: na telefonu je deljenje 221 MB palo sa NotAllowedError „Permission denied“; Chromium za računar
+   ima granicu kMaxSharedFileBytes = 50 MB (share_service_impl.h), Android ima svoj kod — granica tamo NIJE potvrđena → 45 MB uz rezervu,
+   a ako deljenje ipak odbije (NotAllowedError), poruka upućuje na „Sačuvaj na telefon“. */
+const SHARE_MAX_BYTES = 45*1024*1024;
+function backupSizeEst(){ let n = JSON.stringify(items).length + 2000; SLIKE.forEach(a=>a.forEach(u=>{ n += u.length + 3; })); return n; }
+function fmtMB(b){ return (b/1048576).toFixed(b < 10485760 ? 1 : 0).replace('.', ',')+' MB'; }
+function backupSmallEnough(){ return backupSizeEst() <= SHARE_MAX_BYTES; }
 function canShareBackup(){
   try{ return !!(navigator.canShare && navigator.share && navigator.canShare({ files:[ new File(['{}'], 'proba.txt', {type:'text/plain'}) ] })); }
   catch(e){ return false; }
@@ -926,6 +934,7 @@ function shareBackup(){
     showBanner('Kopija je podeljena.', 'info');
   }).catch(err=>{
     if(err && err.name==='AbortError') return;
+    if(err && err.name==='NotAllowedError'){ showBanner('Telefon ne dozvoljava deljenje ove kopije ('+fmtMB(file.size)+'). Dodirni „Sačuvaj kopiju na telefon“, pa je otpremi na Drive.'); return; }
     showBanner('Deljenje nije uspelo: '+(err && err.message ? err.message : err));
   });
 }
@@ -949,7 +958,7 @@ function exportBackup(){
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = 'gde-sam-ostavio-bekap-'+todayISO()+'.json';
+  a.download = backupShareName().replace(/\.txt$/, '.json');
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
@@ -958,7 +967,7 @@ function exportBackup(){
   render();
   const hintEl = document.getElementById('lastBackupHint');
   if(hintEl) hintEl.textContent = 'Poslednji bekap: '+lastBackupDisplay();
-  showBanner('Bekap preuzet — sačuvaj ga na sigurno mesto (npr. Google Drive).', 'info');
+  showBanner('Kopija ('+fmtMB(blob.size)+') je u Preuzimanjima. Prebaci je na Google Drive: Drive → ＋ → Otpremi → Download.', 'info');
 }
 function triggerImportBackup(){
   const inp = document.getElementById('backupFileInput');
@@ -1043,7 +1052,7 @@ function backupReminderHtml(){
   if(!msg) return '';
   return '<div class="backup-reminder-row">'+
     '<span>'+escapeHtml(msg)+'</span>'+
-    (canShareBackup() ? '<button onclick="shareBackup()">podeli kopiju</button>' : '<button onclick="exportBackup()">izvezi bekap</button>')+
+    '<button onclick="exportBackup()">sačuvaj kopiju</button>'+
     '</div>';
 }
 function persistItems(){ return persistChecked('gso:items', JSON.stringify(items)); }   /* stvari NEMAJU slike u sebi (Slike) */
@@ -1704,7 +1713,7 @@ function confirmDeleteItem(id, swapFromFn){
 }
 
 /* ---------- ADD / EDIT FORM (draft-based, da ne izgubi unos pri osvezavanju zbog fotografije) ---------- */
-const APP_VERSION = 12; /* svaka objava: +1, isti broj u linku ?v=N i u keš imenu sw.js */
+const APP_VERSION = 13; /* svaka objava: +1, isti broj u linku ?v=N i u keš imenu sw.js */
 /* MODUL ai-dnevnik v1 — izvor: Arhiva v174 (Podešavanja → AI obrada: trošak i poslednje obrade, probano 20.10.2026.)
 Upotreba (uz modul gemini v2):
   const log = [], t0 = Date.now();
@@ -3194,11 +3203,14 @@ function openSettingsSub(key){
     body='<div id="themeOptList">'+themeOptionsHtml()+'</div>';
   } else if(key==='backup'){
     title='Rezervna kopija';
-    body=(canShareBackup() ? '<div class="modal-actions" style="margin-bottom:10px;"><button class="save-btn" id="shareBackupBtn" onclick="shareBackup()">Podeli kopiju (Google Drive, mejl…)</button></div>' : '')+
-      '<div class="modal-actions" style="margin-bottom:10px;">'+
-      '<button class="cancel-btn" style="flex:1;" onclick="exportBackup()">Izvezi bekap</button>'+
-      '<button class="cancel-btn" style="flex:1;" onclick="triggerImportBackup()">Uvezi bekap</button>'+
+    const sz = backupSizeEst(), small = sz <= SHARE_MAX_BYTES;
+    body='<div class="modal-actions" style="margin-bottom:6px;"><button class="save-btn" id="saveBackupBtn" onclick="exportBackup()">Sačuvaj kopiju na telefon</button></div>'+
+      '<div class="field-hint" id="backupSizeHint">Kopija: oko '+fmtMB(sz)+', sa svim slikama. Ide u Preuzimanja (Download); odatle je prebaci na Google Drive: Drive → ＋ → Otpremi → Download → izaberi fajl.</div>'+
+      '<div class="modal-actions" style="margin:12px 0 10px;">'+
+      ((canShareBackup() && small) ? '<button class="cancel-btn" style="flex:1;" id="shareBackupBtn" onclick="shareBackup()">Podeli (Drive, mejl…)</button>' : '')+
+      '<button class="cancel-btn" style="flex:1;" onclick="triggerImportBackup()">Uvezi kopiju</button>'+
       '</div>'+
+      ((canShareBackup() && !small) ? '<div class="field-hint" id="shareTooBigHint">„Podeli“ je sklonjeno: kopija je veća od 45 MB, a toliku telefon ne pušta kroz meni za deljenje.</div>' : '')+
       '<input type="file" id="backupFileInput" accept=".json,.txt,application/json,text/plain" style="display:none" onchange="handleImportFile(this)">'+
       '<div class="field-hint" id="lastBackupHint">Poslednji bekap: '+lastBackupDisplay()+'</div>'+
       '<div class="field" style="margin-top:14px;"><label>Podseti me na svakih (dana) bez bekapa</label>'+
@@ -3388,7 +3400,7 @@ function openHelpScreen(){
     { t:'Izmena podataka', c:'Dodir na polje: stari tekst se vidi osenčen, a kucanjem ili glasom upisuješ novo. Drugi dodir vraća stari tekst za izmenu dela. Taster za brisanje u praznom polju vraća na prethodno polje.' },
     { t:'Brisanje i korpa', c:'Povuci stvar ulevo → crveno dugme „Izbriši“, ili Obriši dole u kartici, ili više njih odjednom: dug pritisak → označi → Izbriši. Obrisano ide u korpu (Podešavanja → Korpa) i čeka zadati broj dana (podrazumevano 30), pa se samo trajno briše. U korpi izabereš stvari, pa „Vrati“ (sa svim podacima i slikama) ili „Obriši trajno“.' },
     { t:'Obaveštenja', c:'Poruke se pojavljuju gore: zeleno kad je nešto urađeno, crveno kad nije uspelo. Nestanu same.' },
-    { t:'Rezervna kopija', c:'Podaci se čuvaju samo u Chrome-u na ovom telefonu: kad se obrišu podaci sajta, nestaju. Podešavanja → Rezervna kopija: „Podeli kopiju“ otvara meni za deljenje, pa kopiju jednim dodirom pošalješ na Google Drive ili mejlom; ime kopije ima datum i vreme. Kopija sadrži i sve slike. „Izvezi bekap“ preuzima fajl na telefon, a „Uvezi bekap“ vraća podatke iz kopije (.txt ili .json). Korpa i Gemini ključ ne ulaze u kopiju. Ako upis u memoriju telefona ikad ne uspe, gore odmah piše crveno „NIJE SAČUVANO!“.' },
+    { t:'Rezervna kopija', c:'Podaci se čuvaju samo u Chrome-u na ovom telefonu: kad se obrišu podaci sajta, nestaju. Podešavanja → Rezervna kopija: „Sačuvaj kopiju na telefon“ pravi jedan fajl sa svim stvarima i slikama u Preuzimanjima (Download); ime ima datum i vreme. Odatle ga prebaci na Google Drive (Drive → ＋ → Otpremi → Download → izaberi fajl), da kopija bude i van telefona. Dok je kopija manja od 45 MB, „Podeli“ je šalje pravo na Drive ili mejlom; veću telefon ne pušta kroz meni za deljenje, pa se tada „Podeli“ ne prikazuje. „Uvezi kopiju“ vraća podatke iz kopije (.json ili .txt). Korpa i Gemini ključ ne ulaze u kopiju. Ako upis u memoriju telefona ikad ne uspe, gore odmah piše crveno „NIJE SAČUVANO!“.' },
     { t:'Dnevnik grešaka', c:'Kad se desi greška (npr. AI ne odgovori ili upis ne uspe), aplikacija je tiho zapiše. Tada u Podešavanjima, ispod broja verzije, sitno crveno piše koliko ih ima; dodir otvara dnevnik (Kopiraj / Obriši).' },
     { t:'Brojevi u podešavanjima', c:'Broj dana (podsetnik za bekap, korpa) menjaš u polju, pa dodirneš „Sačuvaj“ pored njega ili Enter. Gore se pojavi potvrda.' },
   ];
