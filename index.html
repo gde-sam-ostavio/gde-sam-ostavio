@@ -1704,7 +1704,7 @@ function confirmDeleteItem(id, swapFromFn){
 }
 
 /* ---------- ADD / EDIT FORM (draft-based, da ne izgubi unos pri osvezavanju zbog fotografije) ---------- */
-const APP_VERSION = 10; /* svaka objava: +1, isti broj u linku ?v=N i u keš imenu sw.js */
+const APP_VERSION = 11; /* svaka objava: +1, isti broj u linku ?v=N i u keš imenu sw.js */
 /* MODUL ai-dnevnik v1 — izvor: Arhiva v174 (Podešavanja → AI obrada: trošak i poslednje obrade, probano 20.10.2026.)
 Upotreba (uz modul gemini v2):
   const log = [], t0 = Date.now();
@@ -2661,6 +2661,14 @@ function scrollAndHighlightItem(id){
    Galerija: više slika odjednom. Slikaj: kamera unutar aplikacije (getUserMedia + ImageCapture.takePhoto, MDN), više slika
    zaredom, pa Gotovo. Nema kamere / nema dozvole → sistemska kamera (jedna slika). */
 const PIC_MAX = 1600, PIC_Q = 0.85;
+/* v11 (Zoran 19.11.): nove slike u WebP (Chrome canvas.toDataURL('image/webp'); izmereno na Zoranovoj slici 150 KB JPEG → 69 KB WebP,
+   oba 0,85 i 1600 px). Ako pregledač ne napravi WebP, toDataURL vrati PNG (MDN) → onda JPEG kao do v10. Stare slike se ne diraju.
+   AVIF NE: Chrome ga ne pravi (vrati PNG ~10× veći). Gemini prima image/webp (zvanična lista tipova). */
+const PIC_FMT = 'image/webp';
+function canvasPic(c, q){
+  const w = c.toDataURL(PIC_FMT, q);
+  return w.startsWith('data:'+PIC_FMT+';') ? w : c.toDataURL('image/jpeg', q);
+}
 function loadImg(src){ return new Promise((res, rej)=>{ const im = new Image(); im.onload = ()=>res(im); im.onerror = ()=>rej(new Error('Slika ne može da se učita.')); im.src = src; }); }
 async function shrinkPic(src, max, q){
   const im = await loadImg(src);
@@ -2668,7 +2676,7 @@ async function shrinkPic(src, max, q){
   const c = document.createElement('canvas');
   c.width = Math.max(1, Math.round(im.naturalWidth * k)); c.height = Math.max(1, Math.round(im.naturalHeight * k));
   c.getContext('2d').drawImage(im, 0, 0, c.width, c.height);
-  return c.toDataURL('image/jpeg', q || PIC_Q);
+  return canvasPic(c, q || PIC_Q);
 }
 function blobToPic(blob){ const u = URL.createObjectURL(blob); return shrinkPic(u).finally(()=>URL.revokeObjectURL(u)); }
 function addPicsToDraft(arr){
