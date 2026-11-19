@@ -1704,7 +1704,7 @@ function confirmDeleteItem(id, swapFromFn){
 }
 
 /* ---------- ADD / EDIT FORM (draft-based, da ne izgubi unos pri osvezavanju zbog fotografije) ---------- */
-const APP_VERSION = 11; /* svaka objava: +1, isti broj u linku ?v=N i u keš imenu sw.js */
+const APP_VERSION = 12; /* svaka objava: +1, isti broj u linku ?v=N i u keš imenu sw.js */
 /* MODUL ai-dnevnik v1 — izvor: Arhiva v174 (Podešavanja → AI obrada: trošak i poslednje obrade, probano 20.10.2026.)
 Upotreba (uz modul gemini v2):
   const log = [], t0 = Date.now();
@@ -2878,7 +2878,7 @@ function viewerSetProfile(){
 }
 /* Traka slika (kartica: samo listanje; pregled: i uvećanje/okretanje sa dva prsta, samo za gledanje).
    Jedan prst: slika prati prst, dovoljno daleko ili brz potez = sledeća, inače se vrati (na krajevima otpor).
-   Uvećano: jedan prst pomera sliku. Dvostruki dodir: uvećaj 2,5× na tom mestu / vrati ceo prikaz. Obican dodir: onTap. */
+   Uvećano: jedan prst pomera sliku. Dvostruki dodir: uvećaj 2,5× na tom mestu / vrati ceo prikaz. Obican dodir: uvećano → ceo prikaz, inače onTap. */
 function stripHtml(arr, fit, strel, edit){
   return '<div class="sw-strip"><div class="sw-track">'+arr.map((u,i)=>'<div class="sw-slide">'+(i===0?'<span class="prof-star" title="Profilna slika">★</span>':'')+
     '<img src="'+u+'" draggable="false"'+(fit==='contain'?' style="width:100%;height:100%;object-fit:contain;display:block;user-select:none;-webkit-user-drag:none"':'')+'>'+
@@ -2977,7 +2977,8 @@ function makeStrip(box, o){
       return;
     }
     tapLast = { t:now, x:p.x, y:p.y }; clearTimeout(tapTimer);
-    tapTimer = setTimeout(()=>{ tapTimer = null; tapLast = null; if(o.onTap) o.onTap(); }, 280);
+    /* v12 (Zoran 19.11.): uvećana/okrenuta slika — dodir je prvo vraća u ceo prikaz, tek sledeći dodir = onTap (nazad) */
+    tapTimer = setTimeout(()=>{ tapTimer = null; tapLast = null; if(z.s > 1 || z.r){ zReset(true); return; } if(o.onTap) o.onTap(); }, 280);
   });
   box.addEventListener('touchcancel', ()=>{ if(g && g.m === 'swipe'){ place(0, true); } g = null; });
   /* miš (računar): klik = onTap */
@@ -3376,7 +3377,7 @@ function openHelpScreen(){
     { t:'Unos glasom ili tekstom', c:'Polje dole na početnom ekranu: izgovori (mikrofon na tastaturi) ili ukucaj rečenicu, npr. „pasoš je u spavaćoj sobi, u fioci noćnog ormarića“, pa ➤. AI odvoji stvar i mesto, odmah sačuva i otvori karticu, gde odmah možeš da ispraviš ili dodaš slike. Ako stvar već postoji (premestio si je), samo joj se promeni mesto. Ako rečeno mesto pripada nekoj fascikli (npr. „u podrumu“ → fascikla Podrum), stvar sama ide u nju. Bez Gemini ključa ili kad AI ne uspe, rečenica se sačuva kao naziv, pa je ispraviš u kartici.' },
     { t:'Kartica stvari', c:'Dodir na stvar (ili „Dodaj“ gore) otvara karticu: naziv je u naslovu (dodir na njega ga menja), ispod je velika profilna slika i polje „Gde se nalazi“ sa datumom unosa. Dodir na to polje ga širi preko celog ekrana, kao beležnica: tekst menjaš na mestu, ↶ ↷ poništavaju i vraćaju korake (tastatura se tada skloni, dodirni tekst za dalje pisanje). Sačuvaj gore ili „nazad“ čuva promenu i vraća karticu. Dole su Slikaj, Galerija, Obriši, Otkaži i Sačuvaj. Sačuvaj je bled dok ništa ne promeniš.' },
     { t:'Slike', c:'Slikaj otvara kameru u aplikaciji: slikaj koliko treba (gore piše „Slikano: N“), pa Gotovo — sve slike idu u karticu. Galerija: izaberi više slika odjednom. Slike se čuvaju cele (bez isecanja), umanjene da ne zauzimaju previše mesta. Prvi put Chrome traži dozvolu za kameru; bez nje se otvara obična kamera telefona.' },
-    { t:'Profilna slika', c:'Slike listaš prevlačenjem već u kartici; dodir na veliku sliku otvara ih preko celog ekrana. Tamo dva prsta uvećavaju i okreću sliku (samo za gledanje), dvostruki dodir uvećava ili vraća. Profilna slika ima ★ u uglu. „★ Postavi kao profilnu“ odmah čuva izbor (gore stiže poruka); 🗑 briše sliku. Dodir na samu sliku vraća nazad. Brisanje slike postaje konačno tek kad pritisneš Sačuvaj.' },
+    { t:'Profilna slika', c:'Slike listaš prevlačenjem već u kartici; dodir na veliku sliku otvara ih preko celog ekrana. Tamo dva prsta uvećavaju i okreću sliku (samo za gledanje), dvostruki dodir uvećava ili vraća. Profilna slika ima ★ u uglu. „★ Postavi kao profilnu“ odmah čuva izbor (gore stiže poruka); 🗑 briše sliku. Dodir na samu sliku vraća nazad; ako je uvećana, prvi dodir je vraća u ceo prikaz, drugi nazad. Brisanje slike postaje konačno tek kad pritisneš Sačuvaj.' },
     { t:'Strelica na slici', c:'Da pokažeš tačno gde je stvar na slici: otvori sliku, pa „📍 Strelica“ → dodirni predmet. Tu dolazi vrh crvene strelice, a rep ide ka sredini slike. Isprekidani kružić na repu prevuci da okreneš strelicu; novi dodir premešta vrh. „Ukloni strelicu“ je briše. Sačuvaj gore odmah čuva (gore stiže poruka), Otkaži ili „nazad“ vraća bez promene. Svaka slika ima svoju strelicu; strelica se vidi i na velikoj slici u kartici, a sama slika se ne menja.' },
     { t:'Šta je na slikama', c:'Posle čuvanja slika AI ih u pozadini pogleda i zapiše kratak opis (ispod velike slike: „Na slikama: …“). Pretraga posle nalazi i te reči — npr. „šrafciger“ u kutiji sa alatom. Nov opis se pravi samo kad promeniš slike; bez interneta se napravi kasnije.' },
     { t:'Pretraga', c:'„Pretraži“ traži po nazivu, mestu i opisu slika: ćirilica ili latinica, sa kvačicama ili bez, velika ili mala slova, više reči bilo kojim redom, deo reči, i bez crtica i razmaka („golf7“ = „Golf 7“). Ispod rezultata „✨ Traži sa AI“ traži po značenju (npr. „dokumenta“ nalazi pasoš). „Sortiraj“: Naziv, Fascikla (u „Sve“ grupisano po fasciklama) ili Najnovije.' },
