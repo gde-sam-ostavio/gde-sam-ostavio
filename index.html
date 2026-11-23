@@ -689,6 +689,14 @@ body.selecting .list-area{ padding-bottom:110px; }
 .cd-cnt{ position:absolute; right:10px; bottom:10px; background:rgba(0,0,0,.65); color:#fff; border-radius:999px; padding:5px 11px; font-size:13px; font-weight:600; }
 .cd-opis{ font-size:12.5px; color:var(--text-dim); margin:8px 2px 0; line-height:1.45; }
 .cd-meta{ font-size:12px; color:var(--text-dim); font-weight:400; }
+/* v14: fascikla u kartici (posle „Gde se nalazi“) i na početnom (ispred mesta) */
+.cd-lbl-l{ display:flex; align-items:center; gap:8px; min-width:0; }
+.cd-fold{ flex:0 1 auto; min-width:0; display:inline-flex; align-items:center; gap:5px; height:28px; padding:0 11px 0 9px; border-radius:999px; border:1px solid var(--line); background:transparent; color:var(--text); font-size:13px; font-weight:600; font-family:inherit; cursor:pointer; }
+.cd-fold span{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.cd-fold svg{ flex:none; }
+.cd-fold.none{ padding:0 9px; color:var(--text-dim); }
+.form-full.mesto-full .cd-fold{ display:none; }
+.card-fold{ color:var(--frame-acc); font-weight:600; }
 /* v3: polje „Gde se nalazi“ popunjava prazan prostor do donjeg reda; dodir ga širi preko celog ekrana (nazad/Gotovo vraća) */
 .form-full .ff-body.cd-body{ display:flex; flex-direction:column; }
 .cd-body > .field{ flex:none; }
@@ -1570,6 +1578,8 @@ function render(){
     if(settings.sortMode==='fascikla' && !curFolder()){ const f = getFolder(it.folder); return f ? f.naziv : 'Bez fascikle'; }
     return null;
   }
+  /* v14: naziv fascikle ispred mesta (ne u samoj otvorenoj fascikli) */
+  const fTag = (it)=>{ const f = !cf || qWords.length ? getFolder(it.folder) : null; return f ? '<span class="card-fold">'+escapeHtml(f.naziv)+'</span>'+(it.mesto?' · ':'') : ''; };
   const press = (it)=>' oncontextmenu="return false" onclick="handleCardClick(\''+it.id+'\')" onpointerdown="startCardLongPress(\''+it.id+'\')" onpointerup="cancelCardLongPress()" onpointerleave="cancelCardLongPress()" onpointercancel="cancelCardLongPress()"';
   if(filtered.length===0){
     listHtml = '<div class="empty">'+(qWords.length ? 'Nema stvari koje odgovaraju pretrazi "'+escapeHtml(searchQuery)+'".' : cf && items.length ? 'U ovoj fascikli još nema stvari.<br>Nova stvar dodata ovde ide u nju; postojeće dodaš dugim pritiskom → „Premesti u“.' : 'Još nema zabeleženih stvari.<br>Izgovori ili ukucaj dole šta je i gde je, ili dodirni „Dodaj“ gore.')+'</div>';
@@ -1577,7 +1587,7 @@ function render(){
     listHtml = '<div class="grid-list">'+
       filtered.map(it=>'<div class="grid-card'+sel(it)+'" id="item-'+it.id+'" data-sid="'+it.id+'"'+press(it)+'>'+dot+thumb(it)+
           '<div class="gc-name">'+(it.pinned?'📌 ':'')+escapeHtml(displayNaziv(it.naziv))+'</div>'+
-          '<div class="gc-sub">'+escapeHtml(it.mesto||'')+'</div>'+
+          '<div class="gc-sub">'+fTag(it)+escapeHtml(it.mesto||'')+'</div>'+
           '</div>').join('')+
       '</div>';
   } else {
@@ -1588,7 +1598,7 @@ function render(){
         if(gk!==null && gk!==lastGroup){ headerHtml = '<div class="group-header">'+escapeHtml(gk)+'</div>'; lastGroup = gk; }
         return headerHtml+'<div class="med-card'+sel(it)+'" id="item-'+it.id+'" data-sid="'+it.id+'"'+press(it)+'>'+thumb(it)+
           '<div class="med-info"><div class="med-name">'+(it.pinned?'📌 ':'')+escapeHtml(displayNaziv(it.naziv))+'</div>'+
-          '<div class="med-sub">'+escapeHtml(it.mesto||'')+'</div></div>'+dot+
+          '<div class="med-sub">'+fTag(it)+escapeHtml(it.mesto||'')+'</div></div>'+dot+
           '</div>';
       }).join('');
   }
@@ -1713,7 +1723,7 @@ function confirmDeleteItem(id, swapFromFn){
 }
 
 /* ---------- ADD / EDIT FORM (draft-based, da ne izgubi unos pri osvezavanju zbog fotografije) ---------- */
-const APP_VERSION = 13; /* svaka objava: +1, isti broj u linku ?v=N i u keš imenu sw.js */
+const APP_VERSION = 14; /* svaka objava: +1, isti broj u linku ?v=N i u keš imenu sw.js */
 /* MODUL ai-dnevnik v1 — izvor: Arhiva v174 (Podešavanja → AI obrada: trošak i poslednje obrade, probano 20.10.2026.)
 Upotreba (uz modul gemini v2):
   const log = [], t0 = Date.now();
@@ -2407,13 +2417,14 @@ let formOrig = '';
 function draftKey(){ if(!formDraft) return '';
   const k = [formDraft.naziv.trim(), formDraft.mesto.trim(), formDraft.slike.length, formDraft.slike.map(p=>p.length+p.slice(-16))];
   if((formDraft.strel||[]).some(Boolean)) k.push(formDraft.strel);   /* v10 */
+  if(formDraft.folder) k.push('F:'+formDraft.folder);   /* v14 */
   return JSON.stringify(k); }   /* v5: i redosled istih veličina (profilna) */
 function openItemForm(editId, swapFromFn){
   formEditId = editId || null;
   const it = editId ? getItem(editId) : null;
-  formDraft = { naziv: it ? (it.naziv||'') : '', mesto: it ? (it.mesto||'') : '', slike: it ? slikeOf(it) : [] };
+  formDraft = { naziv: it ? (it.naziv||'') : '', mesto: it ? (it.mesto||'') : '', slike: it ? slikeOf(it) : [], folder: it ? (it.folder||'') : (curFolder()||'') };   /* v14: folder */
   formDraft.strel = strelOf(it, formDraft.slike.length);
-  formOrig = editId ? draftKey() : JSON.stringify(['','',0,[]]);
+  formOrig = draftKey();   /* v14: nova u otvorenoj fascikli nije „izmena“ */
   formAnalyzing = false; mestoHist = null; mestoFull = false; cdIdx = 0;
   renderItemForm();
   if(!formCloseFn){
@@ -2521,7 +2532,7 @@ function renderItemForm(){
     '<button class="modal-close-x" onclick="closeItemForm()" aria-label="Zatvori">✕</button></div>'+
     '<div class="ff-body cd-body">'+
     '<div class="field">'+big+'<div id="cdStatus">'+cardStatusHtml()+'</div></div>'+
-    '<div class="field cd-mesto"><div class="cd-lbl"><label for="fMesto">Gde se nalazi</label>'+
+    '<div class="field cd-mesto"><div class="cd-lbl"><span class="cd-lbl-l"><label for="fMesto">Gde se nalazi</label>'+cdFoldHtml()+'</span>'+
     (it && (it.updatedAt||it.createdAt) ? '<span class="cd-meta">Zabeleženo '+fmtDatum(it.updatedAt||it.createdAt)+'</span>' : '')+
     '<span class="cd-fullbar"><button type="button" class="cd-undo" id="mUndo" onclick="mestoUndo(-1)" aria-label="Poništi">↶</button>'+
     '<button type="button" class="cd-undo" id="mRedo" onclick="mestoUndo(1)" aria-label="Ponovi">↷</button>'+
@@ -2550,6 +2561,38 @@ function renderItemForm(){
     onTap:()=>openViewer(cdIdx) });
 }
 /* red ispod slike: AI prepoznaje naziv / šta je AI video na slikama (samo dok su slike iste kao sačuvane) */
+/* v14: fascikla stvari u kartici — izbor važi tek na Sačuvaj (kao ostale izmene u kartici) */
+function cdFoldHtml(){ const f = getFolder(formDraft.folder);
+  return f ? '<button type="button" class="cd-fold" id="cdFold" onclick="cdFoldSheet()">'+HI('<path d="M3.5 6.5a2 2 0 0 1 2-2h4l2 2h7a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z"/>',16)+'<span>'+escapeHtml(f.naziv)+'</span></button>'
+    : '<button type="button" class="cd-fold none" id="cdFold" onclick="cdFoldSheet()" aria-label="Dodaj u fasciklu">'+HI('<path d="M3.5 6.5a2 2 0 0 1 2-2h4l2 2h7a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z"/><path d="M12 10v6M9 13h6"/>',18)+'</button>'; }
+function cdFoldSheet(){
+  if(!formDraft) return;
+  openHomeSheet(sheetHead('Fascikla')+
+    (folders.length ? '<label class="fold-search">'+HOME_IC.search+'<input id="cdFoldQ" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="search" placeholder="Pretraži fascikle" oninput="renderCdFoldList()"></label>' : '')+
+    '<div id="cdFoldList"></div>');
+  renderCdFoldList();
+}
+/* lista se crta posebno — polje za pretragu se ne dira dok kucaš (Gboard), kao „Premesti u“ */
+function renderCdFoldList(){
+  const el = document.getElementById('cdFoldList'); if(!el || !formDraft) return;
+  const cur = getFolder(formDraft.folder) ? formDraft.folder : '';
+  const q = document.getElementById('cdFoldQ') ? document.getElementById('cdFoldQ').value.trim() : '';
+  const w = foldAll(q).split(' ').filter(Boolean);
+  const hit = w.length ? folders.filter(f=>{ const k = foldAll(f.naziv); return w.every(x=>k.includes(x)); }) : folders;
+  const ck = '<span class="hs-check">✓</span>';
+  el.innerHTML = (w.length ? '' : '<button class="hs-row" onclick="cdFoldPick(\'\')"><span>Bez fascikle</span>'+(cur?'':ck)+'</button>')+
+    hit.map(f=>'<button class="hs-row" onclick="cdFoldPick(\''+f.id+'\')"><span>'+escapeHtml(f.naziv)+'</span>'+(cur===f.id?ck:'')+'</button>').join('')+
+    (w.length && !hit.length ? '<div class="fo-hint">Nema fascikle „'+escapeHtml(q)+'“.</div>' : '')+
+    '<button class="hs-row" style="color:var(--frame-acc)" onclick="cdFoldNew()"><span>+ Nova fascikla'+(w.length && !hit.length ? ' „'+escapeHtml(q)+'“' : '')+'</span></button>';
+}
+function cdFoldNew(){ const q = document.getElementById('cdFoldQ'); const v = q ? q.value.trim() : ''; closeHomeSheet(); newFolderPrompt(false, (fid)=>cdFoldPick(fid), v); }
+function cdFoldPick(fid){
+  if(document.getElementById('homeSheet')) closeHomeSheet();
+  if(!formDraft) return;
+  formDraft.folder = fid || '';
+  const b = document.getElementById('cdFold'); if(b) b.outerHTML = cdFoldHtml();
+  updateSaveDim();
+}
 function cardStatusHtml(){
   if(!formDraft) return '';
   if(formAnalyzing) return '<div class="ai-analyzing" style="margin-top:8px"><span class="ai-spinner"></span> AI prepoznaje stvar...</div>';
@@ -2633,16 +2676,19 @@ function doSaveItem(editId, keepOpen, note){
   const pics = formDraft.slike.slice();
   const strel = strelOf({ strelice: formDraft.strel }, pics.length), hasStrel = strel.some(Boolean);   /* v10 */
   if(hasStrel) f.strelice = strel;
+  const fid = getFolder(formDraft.folder) ? formDraft.folder : '';   /* v14: fascikla iz kartice */
+  if(fid) f.folder = fid;
   let id = editId, old = null;
   if(editId){
     const it = getItem(editId);
     old = Object.assign({}, it);
     Object.assign(it, f, { updatedAt: now });
     if(!hasStrel) delete it.strelice;
+    if(!fid) delete it.folder;
     if(!pics.length){ delete it.opisSlika; delete it.opisSig; }
   } else {
     id = uid('m');
-    items.push(Object.assign({ id: id, ikonica:'📦', createdAt: now, updatedAt: now }, curFolder() ? { folder: curFolder() } : {}, f));
+    items.push(Object.assign({ id: id, ikonica:'📦', createdAt: now, updatedAt: now }, f));
   }
   if(!persistItems()){   /* nije upisano: vraća se staro stanje, kartica ostaje otvorena */
     if(editId){ const it = getItem(editId); Object.keys(it).forEach(k=>delete it[k]); Object.assign(it, old); } else { items = items.filter(x=>x.id!==id); }
@@ -3387,7 +3433,7 @@ function openHelpScreen(){
   const sections = [
     { t:'Čemu služi', c:'Zapišeš gde si nešto ostavio ili spremio (pasoš, rezervni ključ, garanciju, zimske gume…), pa to kasnije brzo nađeš: naziv, gde se nalazi i slike.' },
     { t:'Unos glasom ili tekstom', c:'Polje dole na početnom ekranu: izgovori (mikrofon na tastaturi) ili ukucaj rečenicu, npr. „pasoš je u spavaćoj sobi, u fioci noćnog ormarića“, pa ➤. AI odvoji stvar i mesto, odmah sačuva i otvori karticu, gde odmah možeš da ispraviš ili dodaš slike. Ako stvar već postoji (premestio si je), samo joj se promeni mesto. Ako rečeno mesto pripada nekoj fascikli (npr. „u podrumu“ → fascikla Podrum), stvar sama ide u nju. Bez Gemini ključa ili kad AI ne uspe, rečenica se sačuva kao naziv, pa je ispraviš u kartici.' },
-    { t:'Kartica stvari', c:'Dodir na stvar (ili „Dodaj“ gore) otvara karticu: naziv je u naslovu (dodir na njega ga menja), ispod je velika profilna slika i polje „Gde se nalazi“ sa datumom unosa. Dodir na to polje ga širi preko celog ekrana, kao beležnica: tekst menjaš na mestu, ↶ ↷ poništavaju i vraćaju korake (tastatura se tada skloni, dodirni tekst za dalje pisanje). Sačuvaj gore ili „nazad“ čuva promenu i vraća karticu. Dole su Slikaj, Galerija, Obriši, Otkaži i Sačuvaj. Sačuvaj je bled dok ništa ne promeniš.' },
+    { t:'Kartica stvari', c:'Dodir na stvar (ili „Dodaj“ gore) otvara karticu: naziv je u naslovu (dodir na njega ga menja), ispod je velika profilna slika i polje „Gde se nalazi“ sa datumom unosa. Odmah posle natpisa „Gde se nalazi“ je fascikla stvari (ikonica sa „+“ kad je nema): dodir otvara spisak fascikli sa lupom za brzu pretragu i „+ Nova fascikla“; izbor važi kad dodirneš Sačuvaj. Dodir na to polje ga širi preko celog ekrana, kao beležnica: tekst menjaš na mestu, ↶ ↷ poništavaju i vraćaju korake (tastatura se tada skloni, dodirni tekst za dalje pisanje). Sačuvaj gore ili „nazad“ čuva promenu i vraća karticu. Dole su Slikaj, Galerija, Obriši, Otkaži i Sačuvaj. Sačuvaj je bled dok ništa ne promeniš.' },
     { t:'Slike', c:'Slikaj otvara kameru u aplikaciji: slikaj koliko treba (gore piše „Slikano: N“), pa Gotovo — sve slike idu u karticu. Galerija: izaberi više slika odjednom. Slike se čuvaju cele (bez isecanja), umanjene da ne zauzimaju previše mesta. Prvi put Chrome traži dozvolu za kameru; bez nje se otvara obična kamera telefona.' },
     { t:'Profilna slika', c:'Slike listaš prevlačenjem već u kartici; dodir na veliku sliku otvara ih preko celog ekrana. Tamo dva prsta uvećavaju i okreću sliku (samo za gledanje), dvostruki dodir uvećava ili vraća. Profilna slika ima ★ u uglu. „★ Postavi kao profilnu“ odmah čuva izbor (gore stiže poruka); 🗑 briše sliku. Dodir na samu sliku vraća nazad; ako je uvećana, prvi dodir je vraća u ceo prikaz, drugi nazad. Brisanje slike postaje konačno tek kad pritisneš Sačuvaj.' },
     { t:'Strelica na slici', c:'Da pokažeš tačno gde je stvar na slici: otvori sliku, pa „📍 Strelica“ → dodirni predmet. Tu dolazi vrh crvene strelice, a rep ide ka sredini slike. Isprekidani kružić na repu prevuci da okreneš strelicu; novi dodir premešta vrh. „Ukloni strelicu“ je briše. Sačuvaj gore odmah čuva (gore stiže poruka), Otkaži ili „nazad“ vraća bez promene. Svaka slika ima svoju strelicu; strelica se vidi i na velikoj slici u kartici, a sama slika se ne menja.' },
@@ -3395,7 +3441,7 @@ function openHelpScreen(){
     { t:'Pretraga', c:'„Pretraži“ traži po nazivu, mestu i opisu slika: ćirilica ili latinica, sa kvačicama ili bez, velika ili mala slova, više reči bilo kojim redom, deo reči, i bez crtica i razmaka („golf7“ = „Golf 7“). Ispod rezultata „✨ Traži sa AI“ traži po značenju (npr. „dokumenta“ nalazi pasoš). „Sortiraj“: Naziv, Fascikla (u „Sve“ grupisano po fasciklama) ili Najnovije.' },
     { t:'Pitanja', c:'U isto polje dole možeš i da pitaš: „Gde je pasoš?“, „Šta imam u garaži?“, „Da li imam bušilicu?“. AI prepozna pitanje i odgovori (dodir na stvar u odgovoru je otvara) — ništa se ne menja i ništa novo se ne pravi. Može i da predloži izmenu (npr. novo mesto) ili brisanje, ali ništa se ne menja dok sam ne potvrdiš. Bez Gemini ključa pitanje otvara običnu pretragu.' },
     { t:'Prikaz', c:'Ikonica ▦/☰ menja prikaz između liste i mreže.' },
-    { t:'Fascikle', c:'Ispod dugmadi su fascikle: „Sve“ (uvek levo) prikazuje sve stvari, dodir na fasciklu samo njene; ostale fascikle listaš prstom. Novu praviš dugmetom „Fascikla“ gore. Nova stvar (dole glasom, „Dodaj“ ili AI) ide u fasciklu koja je otvorena. Dug pritisak na fasciklu: Preimenuj, Promeni redosled (drži ≡ i prevuci) ili Obriši fasciklu (stvari iz nje ostaju, samo bez fascikle). Pretraga uvek traži po svim fasciklama.' },
+    { t:'Fascikle', c:'Ispod dugmadi su fascikle: „Sve“ (uvek levo) prikazuje sve stvari, dodir na fasciklu samo njene; ostale fascikle listaš prstom. Novu praviš dugmetom „Fascikla“ gore. Nova stvar (dole glasom, „Dodaj“ ili AI) ide u fasciklu koja je otvorena. U „Sve“ i u pretrazi naziv fascikle piše na kartici stvari, ispred mesta. Dug pritisak na fasciklu: Preimenuj, Promeni redosled (drži ≡ i prevuci) ili Obriši fasciklu (stvari iz nje ostaju, samo bez fascikle). Pretraga uvek traži po svim fasciklama.' },
     { t:'Označavanje više stvari', c:'Dug pritisak na stvar je označi; dodirom označavaš još. Gore: ✕ završava (i „nazad“), „Izaberi sve“ desno označi sve (ponovo: „Poništi izbor“). Dole: Zakači/Otkači (na vrh spiska), Premesti u (fasciklu — lupa gore je brzo nađe — ili nova fascikla) i Izbriši (u korpu).' },
     { t:'Izmena podataka', c:'Dodir na polje: stari tekst se vidi osenčen, a kucanjem ili glasom upisuješ novo. Drugi dodir vraća stari tekst za izmenu dela. Taster za brisanje u praznom polju vraća na prethodno polje.' },
     { t:'Brisanje i korpa', c:'Povuci stvar ulevo → crveno dugme „Izbriši“, ili Obriši dole u kartici, ili više njih odjednom: dug pritisak → označi → Izbriši. Obrisano ide u korpu (Podešavanja → Korpa) i čeka zadati broj dana (podrazumevano 30), pa se samo trajno briše. U korpi izabereš stvari, pa „Vrati“ (sa svim podacima i slikama) ili „Obriši trajno“.' },
