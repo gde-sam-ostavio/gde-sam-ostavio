@@ -1728,7 +1728,7 @@ function confirmDeleteItem(id, swapFromFn){
 }
 
 /* ---------- ADD / EDIT FORM (draft-based, da ne izgubi unos pri osvezavanju zbog fotografije) ---------- */
-const APP_VERSION = 15; /* svaka objava: +1, isti broj u linku ?v=N i u keš imenu sw.js */
+const APP_VERSION = 16; /* svaka objava: +1, isti broj u linku ?v=N i u keš imenu sw.js */
 /* MODUL ai-dnevnik v1 — izvor: Arhiva v174 (Podešavanja → AI obrada: trošak i poslednje obrade, probano 20.10.2026.)
 Upotreba (uz modul gemini v2):
   const log = [], t0 = Date.now();
@@ -2865,7 +2865,6 @@ function renderMark(el){
     '<div class="vw-img" id="vwMkImg">'+stripHtml([formDraft.slike[vwMk.idx]], 'contain', [s], true)+'<div class="vw-mk-pad" id="vwMkPad"></div></div>'+
     '<div class="vw-bot"><button class="vw-prof vw-mk-rm" onclick="markRemove()"'+(s ? '' : ' style="visibility:hidden"')+'>Ukloni strelicu</button>'+   /* mesto uvek zauzeto: slika se ne pomera */
     '<div class="vw-hint">dodir = vrh strelice · prevuci kružić da okreneš</div></div>';
-  if(vwMk.idx === 0){ const st = el.querySelector('.prof-star'); if(st) st.remove(); }
   markWire(document.getElementById('vwMkPad'));
 }
 function markRedraw(){
@@ -2940,7 +2939,7 @@ function viewerSetProfile(){
    Jedan prst: slika prati prst, dovoljno daleko ili brz potez = sledeća, inače se vrati (na krajevima otpor).
    Uvećano: jedan prst pomera sliku. Dvostruki dodir: uvećaj 2,5× na tom mestu / vrati ceo prikaz. Obican dodir: uvećano → ceo prikaz, inače onTap. */
 function stripHtml(arr, fit, strel, edit){
-  return '<div class="sw-strip"><div class="sw-track">'+arr.map((u,i)=>'<div class="sw-slide">'+(i===0?'<span class="prof-star" title="Profilna slika">★</span>':'')+
+  return '<div class="sw-strip"><div class="sw-track">'+arr.map((u,i)=>'<div class="sw-slide">'+(i===0&&!edit?'<span class="prof-star" title="Profilna slika">★</span>':'')+
     '<img src="'+u+'" draggable="false"'+(fit==='contain'?' style="width:100%;height:100%;object-fit:contain;display:block;user-select:none;-webkit-user-drag:none"':'')+'>'+
     arrowSvg(strel && strel[i], fit, edit)+'</div>').join('')+'</div></div>';
 }
