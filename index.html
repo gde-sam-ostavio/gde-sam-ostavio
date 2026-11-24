@@ -2975,7 +2975,23 @@ function makeStrip(box, o){
     const mx = (z.s-1)*box.clientWidth/2 + 40, my = (z.s-1)*box.clientHeight/2 + 40;
     z.tx = Math.max(-mx, Math.min(mx, z.tx)); z.ty = Math.max(-my, Math.min(my, z.ty)); };
   const zReset = (anim)=>{ z.s = 1; z.r = 0; z.tx = 0; z.ty = 0; zApply(anim); };
-  const go = (i)=>{ i = Math.max(0, Math.min(n-1, i)); if(i !== idx){ zReset(false); idx = i; if(o.onIdx) o.onIdx(idx); } place(0, true); };
+  /* v16 (Zoran 24.11., kao Stanje guma v14): listanje u krug — posle poslednje dolazi prva, pre prve poslednja.
+     Susedna slika preko kraja se privremeno pomeri na drugu stranu („duh“), traka klizne, pa se sve vrati na pravo mesto. */
+  let wrapT = 0;
+  const ghost = (dir)=>{ slides.forEach(sl=>{ if(sl._gh){ sl.style.transform = ''; sl._gh = 0; } });
+    if(n < 2 || !dir) return;
+    if(dir > 0 && idx === n-1){ slides[0].style.transform = 'translate3d('+(n*W())+'px,0,0)'; slides[0]._gh = 1; }
+    else if(dir < 0 && idx === 0){ slides[n-1].style.transform = 'translate3d('+(-n*W())+'px,0,0)'; slides[n-1]._gh = 1; } };
+  const go = (i)=>{
+    if(n >= 2 && (i >= n || i < 0)){
+      const dir = i >= n ? 1 : -1;
+      ghost(dir); zReset(false);
+      track.classList.add('anim'); track.style.transform = 'translate3d('+(-(idx+dir)*W())+'px,0,0)';
+      idx = dir > 0 ? 0 : n-1; if(o.onIdx) o.onIdx(idx);
+      clearTimeout(wrapT); wrapT = setTimeout(()=>{ wrapT = 0; ghost(0); place(0, false); }, 280);
+      return;
+    }
+    i = Math.max(0, Math.min(n-1, i)); if(i !== idx){ zReset(false); idx = i; if(o.onIdx) o.onIdx(idx); } place(0, true); };
   place(0, false);
   const rel = (t)=>{ const r = box.getBoundingClientRect(); return { x:t.clientX - r.left - r.width/2, y:t.clientY - r.top - r.height/2 }; };
   let g = null, sx = 0, sy = 0, moved = false, pinched = false, tapLast = null, tapTimer = null, lastTouch = 0;
@@ -3005,7 +3021,9 @@ function makeStrip(box, o){
     } else if(g.m === 'swipe' && e.touches.length === 1){
       const t = e.touches[0], dx = t.clientX - sx, dy = t.clientY - sy;
       if(!g.lock && (Math.abs(dx) > 10 || Math.abs(dy) > 10)) g.lock = Math.abs(dx) > Math.abs(dy) ? 'x' : 'y';
-      if(g.lock === 'x'){ moved = true; const edge = (dx > 0 && idx === 0) || (dx < 0 && idx === n-1); place(edge ? dx*0.3 : dx, false); }
+      if(g.lock === 'x'){ moved = true;
+        if(n < 2){ place(dx*0.3, false); }
+        else { if(!wrapT) ghost(dx < 0 ? 1 : -1); place(dx, false); } }
       else if(g.lock === 'y') moved = true;
     } else if(g.m === 'pan' && e.touches.length === 1){
       const t = e.touches[0]; z.tx = g.tx + (t.clientX - g.x); z.ty = g.ty + (t.clientY - g.y); zClamp(); zApply(false);
@@ -3439,7 +3457,7 @@ function openHelpScreen(){
     { t:'Unos glasom ili tekstom', c:'Polje dole na početnom ekranu: izgovori (mikrofon na tastaturi) ili ukucaj rečenicu, npr. „pasoš je u spavaćoj sobi, u fioci noćnog ormarića“, pa ➤. AI odvoji stvar i mesto, odmah sačuva i otvori karticu, gde odmah možeš da ispraviš ili dodaš slike. Ako stvar već postoji (premestio si je), samo joj se promeni mesto. Ako rečeno mesto pripada nekoj fascikli (npr. „u podrumu“ → fascikla Podrum), stvar sama ide u nju. Bez Gemini ključa ili kad AI ne uspe, rečenica se sačuva kao naziv, pa je ispraviš u kartici.' },
     { t:'Kartica stvari', c:'Dodir na stvar (ili „Dodaj“ gore) otvara karticu: naziv je u naslovu (dodir na njega ga menja), ispod je velika profilna slika i polje „Gde se nalazi“ sa datumom unosa. Odmah posle natpisa „Gde se nalazi“ je fascikla stvari (ikonica sa „+“ kad je nema): dodir otvara spisak fascikli sa lupom za brzu pretragu i „+ Nova fascikla“; izbor važi kad dodirneš Sačuvaj. Dodir na to polje ga širi preko celog ekrana, kao beležnica: tekst menjaš na mestu, ↶ ↷ poništavaju i vraćaju korake (tastatura se tada skloni, dodirni tekst za dalje pisanje). Sačuvaj gore ili „nazad“ čuva promenu i vraća karticu. Dole su Slikaj, Galerija, Obriši, Otkaži i Sačuvaj. Sačuvaj je bled dok ništa ne promeniš.' },
     { t:'Slike', c:'Slikaj otvara kameru u aplikaciji: slikaj koliko treba (gore piše „Slikano: N“), pa Gotovo — sve slike idu u karticu. Galerija: izaberi više slika odjednom. Slike se čuvaju cele (bez isecanja), umanjene da ne zauzimaju previše mesta. Prvi put Chrome traži dozvolu za kameru; bez nje se otvara obična kamera telefona.' },
-    { t:'Profilna slika', c:'Slike listaš prevlačenjem već u kartici; dodir na veliku sliku otvara ih preko celog ekrana. Tamo dva prsta uvećavaju i okreću sliku (samo za gledanje), dvostruki dodir uvećava ili vraća. Profilna slika ima ★ u uglu. „★ Postavi kao profilnu“ odmah čuva izbor (gore stiže poruka); 🗑 briše sliku. Dodir na samu sliku vraća nazad; ako je uvećana, prvi dodir je vraća u ceo prikaz, drugi nazad. Brisanje slike postaje konačno tek kad pritisneš Sačuvaj.' },
+    { t:'Profilna slika', c:'Slike listaš prevlačenjem već u kartici, u krug: posle poslednje dolazi prva, pre prve poslednja; dodir na veliku sliku otvara ih preko celog ekrana. Tamo dva prsta uvećavaju i okreću sliku (samo za gledanje), dvostruki dodir uvećava ili vraća. Profilna slika ima ★ u uglu. „★ Postavi kao profilnu“ odmah čuva izbor (gore stiže poruka); 🗑 briše sliku. Dodir na samu sliku vraća nazad; ako je uvećana, prvi dodir je vraća u ceo prikaz, drugi nazad. Brisanje slike postaje konačno tek kad pritisneš Sačuvaj.' },
     { t:'Strelica na slici', c:'Da pokažeš tačno gde je stvar na slici: otvori sliku, pa „📍 Strelica“ → dodirni predmet. Tu dolazi vrh crvene strelice, a rep ide ka sredini slike. Isprekidani kružić na repu prevuci da okreneš strelicu; novi dodir premešta vrh. „Ukloni strelicu“ je briše. Sačuvaj gore odmah čuva (gore stiže poruka), Otkaži ili „nazad“ vraća bez promene. Svaka slika ima svoju strelicu; strelica se vidi i na velikoj slici u kartici, a sama slika se ne menja.' },
     { t:'Šta je na slikama', c:'Posle čuvanja slika AI ih u pozadini pogleda i zapiše kratak opis (ispod velike slike: „Na slikama: …“). Pretraga posle nalazi i te reči — npr. „šrafciger“ u kutiji sa alatom. Nov opis se pravi samo kad promeniš slike; bez interneta se napravi kasnije.' },
     { t:'Pretraga', c:'„Pretraži“ traži po nazivu, mestu i opisu slika: ćirilica ili latinica, sa kvačicama ili bez, velika ili mala slova, više reči bilo kojim redom, deo reči, i bez crtica i razmaka („golf7“ = „Golf 7“). Ispod rezultata „✨ Traži sa AI“ traži po značenju (npr. „dokumenta“ nalazi pasoš). „Sortiraj“: Naziv, Fascikla (u „Sve“ grupisano po fasciklama) ili Najnovije.' },
